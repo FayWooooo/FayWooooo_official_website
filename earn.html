@@ -1149,7 +1149,7 @@ async function searchUsers() {
       if (email.toLowerCase().includes(searchTerm)) {
         users.add(JSON.stringify({
           email: email,
-          name: data.userName || '未知'
+          name: email || '未知'
         }));
       }
     });
