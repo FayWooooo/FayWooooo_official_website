@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Fay幣互傳 - FayWooooo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="logo.ico" type="image/x-icon">
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
+  
+  <style>
+    body {
+      background-image: linear-gradient(rgb(8,19,41), rgb(0,0,0));
+      color: white;
+      font-family: 'hanwangheiheavy', sans-serif, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .container {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      padding: 30px;
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      max-width: 600px;
+      width: 100%;
+      margin: 20px 0;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #FFD700;
+      font-size: 36px;
+      margin-bottom: 30px;
+    }
+    
+    .balance-section {
+      background: rgba(255,215,0,0.1);
+      border: 2px solid gold;
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .balance-title {
+      font-size: 18px;
+      color: #ccc;
+      margin-bottom: 10px;
+    }
+    
+    .balance-amount {
+      font-size: 32px;
+      color: gold;
+      font-weight: bold;
+    }
+    
+    .transfer-form {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 16px;
+      color: #ccc;
+      margin-bottom: 8px;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: gold;
+      box-shadow: 0 0 10px rgba(255,215,0,0.3);
+    }
+    
+    .quick-amount-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .quick-btn {
+      background: linear-gradient(45deg, #444, #666);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .quick-btn:hover {
+      background: linear-gradient(45deg, #666, #888);
+      transform: translateY(-2px);
+    }
+    
+    .transfer-btn {
+      width: 100%;
+      background: linear-gradient(45deg, #FFD700, #FFA500);
+      color: black;
+      border: none;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .transfer-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255,215,0,0.4);
+    }
+    
+    .transfer-btn:disabled {
+      background: #666;
+      color: #999;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .history-section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 25px;
+      margin-top: 30px;
+    }
+    
+    .history-title {
+      font-size: 20px;
+      color: gold;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .history-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .history-info {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .history-type {
+      font-size: 14px;
+      color: #ccc;
+    }
+    
+    .history-user {
+      font-size: 16px;
+      color: white;
+    }
+    
+    .history-time {
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .history-amount {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .amount-sent {
+      color: #ff6b6b;
+    }
+    
+    .amount-received {
+      color: #51cf66;
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,215,0,0.2);
+      border-top: 4px solid gold;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .back-button {
+      background: linear-gradient(45deg, #4285f4, #1a73e8);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 20px;
+      transition: all 0.3s ease;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(66,133,244,0.4);
+    }
+    
+    .error-message {
+      background: rgba(255,107,107,0.2);
+      border: 1px solid #ff6b6b;
+      color: #ff6b6b;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: none;
+    }
+    
+    .success-message {
+      background: rgba(81,207,102,0.2);
+      border: 1px solid #51cf66;
+      color: #51cf66;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: none;
+    }
+    
+    .coin-animation {
+      position: fixed;
+      font-size: 24px;
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 10000;
+      animation: coinFloat 2s ease-out forwards;
+    }
+    
+    @keyframes coinFloat {
+      0% {
+        opacity: 1;
+        transform: translateY(0px) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100px) scale(1.2);
+      }
+    }
+    
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 28px;
+      }
+      
+      .balance-amount {
+        font-size: 24px;
+      }
+      
+      .quick-amount-buttons {
+        justify-content: center;
+      }
+      
+      .history-item {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💰 Fay幣互傳</h1>
+    
+    <!-- 餘額顯示 -->
+    <div class="balance-section">
+      <div class="balance-title">我的Fay幣餘額</div>
+      <div class="balance-amount" id="currentBalance">0</div>
+    </div>
+    
+    <!-- 轉帳表單 -->
+    <div class="transfer-form">
+      <div id="errorMessage" class="error-message"></div>
+      <div id="successMessage" class="success-message"></div>
+      
+      <div class="form-group">
+        <label class="form-label">收款人 Email</label>
+        <input type="email" id="recipientEmail" class="form-input" placeholder="輸入對方的 Email 地址">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">轉帳金額</label>
+        <input type="number" id="transferAmount" class="form-input" placeholder="輸入要轉帳的 Fay幣數量" min="1">
+        <div class="quick-amount-buttons">
+          <button class="quick-btn" onclick="setQuickAmount(10)">10</button>
+          <button class="quick-btn" onclick="setQuickAmount(50)">50</button>
+          <button class="quick-btn" onclick="setQuickAmount(100)">100</button>
+          <button class="quick-btn" onclick="setQuickAmount(500)">500</button>
+          <button class="quick-btn" onclick="setQuickAmount('all')">全部</button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">轉帳備註 (可選)</label>
+        <input type="text" id="transferNote" class="form-input" placeholder="輸入轉帳備註">
+      </div>
+      
+      <button class="transfer-btn" id="transferBtn" onclick="initiateTransfer()">
+        💸 立即轉帳
+      </button>
+    </div>
+    
+    <!-- 轉帳記錄 -->
+    <div class="history-section">
+      <div class="history-title">
+        📊 轉帳記錄
+        <button class="quick-btn" onclick="loadTransferHistory()">🔄 重新整理</button>
+      </div>
+      <div id="historyContainer">
+        <div style="text-align: center; color: #ccc; padding: 20px;">
+          載入中...
+        </div>
+      </div>
+    </div>
+    
+    <a href="index.html" class="back-button">← 回首頁</a>
+  </div>
+  
+  <!-- 載入遮罩 -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <script type="module">
+    // Firebase 配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyAw3NxfRft4pke6TUl9gQ4a8P0LEm30zWo",
+      authDomain: "faycoin-bb878.firebaseapp.com",
+      projectId: "faycoin-bb878",
+      storageBucket: "faycoin-bb878.firebasestorage.app",
+      messagingSenderId: "665116400856",
+      appId: "1:665116400856:web:a263d792c69129400d8bad",
+      measurementId: "G-ZSZZD4W1HX"
+    };
+
+    // 初始化 Firebase
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, orderBy, limit, onSnapshot, runTransaction } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 用戶資料
+    const userEmail = localStorage.getItem('userEmail') || '';
+    const userName = localStorage.getItem('userName') || '';
+    const userId = localStorage.getItem('userId') || userEmail;
+
+    // 檢查登入狀態
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      alert('⚠️ 請先登入才能使用轉帳功能');
+      window.location.href = 'index.html';
+    }
+
+    // Fay幣管理系統
+    class FayCoinManager {
+      constructor() {
+        this.balance = 0;
+        this.init();
+      }
+
+      async init() {
+        await this.loadBalance();
+        this.updateBalanceDisplay();
+        this.setupRealtimeSync();
+      }
+
+      // 從 Firebase 載入餘額
+      async loadBalance() {
+        try {
+          const userDocRef = doc(db, 'userFayCoins', userId);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            this.balance = userDoc.data().balance || 0;
+          } else {
+            // 新用戶，初始化資料
+            await setDoc(userDocRef, {
+              userId: userId,
+              userEmail: userEmail,
+              userName: userName,
+              balance: 0,
+              lastUpdated: new Date().toISOString()
+            });
+            this.balance = 0;
+          }
+        } catch (error) {
+          console.error('載入餘額失敗:', error);
+          // 降級到本地存儲
+          this.balance = parseInt(localStorage.getItem('fayCoinBalance')) || 0;
+        }
+      }
+
+      // 更新餘額到 Firebase
+      async updateBalance(newBalance) {
+        try {
+          const userDocRef = doc(db, 'userFayCoins', userId);
+          await updateDoc(userDocRef, {
+            balance: newBalance,
+            lastUpdated: new Date().toISOString()
+          });
+          
+          this.balance = newBalance;
+          localStorage.setItem('fayCoinBalance', newBalance.toString());
+          this.updateBalanceDisplay();
+          
+          return true;
+        } catch (error) {
+          console.error('更新餘額失敗:', error);
+          return false;
+        }
+      }
+
+      // 轉帳功能
+      async transfer(recipientEmail, amount, note = '') {
+        if (amount <= 0 || amount > this.balance) {
+          throw new Error('轉帳金額無效');
+        }
+
+        if (recipientEmail === userEmail) {
+          throw new Error('不能轉帳給自己');
+        }
+
+        // 使用 Firebase Transaction 確保原子性操作
+        try {
+          const result = await runTransaction(db, async (transaction) => {
+            // 讀取發送者餘額
+            const senderDocRef = doc(db, 'userFayCoins', userId);
+            const senderDoc = await transaction.get(senderDocRef);
+            
+            if (!senderDoc.exists()) {
+              throw new Error('發送者帳戶不存在');
+            }
+
+            const senderBalance = senderDoc.data().balance || 0;
+            if (senderBalance < amount) {
+              throw new Error('餘額不足');
+            }
+
+            // 檢查接收者是否存在，如果不存在則創建
+            const recipientDocRef = doc(db, 'userFayCoins', recipientEmail);
+            const recipientDoc = await transaction.get(recipientDocRef);
+            
+            let recipientBalance = 0;
+            if (recipientDoc.exists()) {
+              recipientBalance = recipientDoc.data().balance || 0;
+            } else {
+              // 創建新的接收者帳戶
+              transaction.set(recipientDocRef, {
+                userId: recipientEmail,
+                userEmail: recipientEmail,
+                userName: recipientEmail.split('@')[0],
+                balance: 0,
+                lastUpdated: new Date().toISOString()
+              });
+            }
+
+            // 更新餘額
+            const newSenderBalance = senderBalance - amount;
+            const newRecipientBalance = recipientBalance + amount;
+
+            transaction.update(senderDocRef, {
+              balance: newSenderBalance,
+              lastUpdated: new Date().toISOString()
+            });
+
+            transaction.update(recipientDocRef, {
+              balance: newRecipientBalance,
+              lastUpdated: new Date().toISOString()
+            });
+
+            return { newSenderBalance, newRecipientBalance };
+          });
+
+          // 記錄轉帳歷史
+          await this.recordTransfer(recipientEmail, amount, note, 'completed');
+          
+          // 更新本地餘額
+          this.balance = result.newSenderBalance;
+          localStorage.setItem('fayCoinBalance', this.balance.toString());
+          this.updateBalanceDisplay();
+
+          return true;
+        } catch (error) {
+          console.error('轉帳失敗:', error);
+          throw error;
+        }
+      }
+
+      // 記錄轉帳歷史
+      async recordTransfer(recipientEmail, amount, note, status) {
+        try {
+          const transferData = {
+            senderId: userId,
+            senderEmail: userEmail,
+            senderName: userName,
+            recipientEmail: recipientEmail,
+            amount: amount,
+            note: note || '',
+            status: status,
+            timestamp: new Date().toISOString(),
+            type: 'transfer'
+          };
+
+          await addDoc(collection(db, 'transferHistory'), transferData);
+        } catch (error) {
+          console.error('記錄轉帳歷史失敗:', error);
+        }
+      }
+
+      // 設置實時同步
+      setupRealtimeSync() {
+        const userDocRef = doc(db, 'userFayCoins', userId);
+        onSnapshot(userDocRef, (doc) => {
+          if (doc.exists()) {
+            const newBalance = doc.data().balance || 0;
+            if (newBalance !== this.balance) {
+              this.balance = newBalance;
+              localStorage.setItem('fayCoinBalance', newBalance.toString());
+              this.updateBalanceDisplay();
+              this.showBalanceChangeAnimation(newBalance);
+            }
+          }
+        });
+      }
+
+      // 更新餘額顯示
+      updateBalanceDisplay() {
+        const balanceElement = document.getElementById('currentBalance');
+        if (balanceElement) {
+          balanceElement.textContent = this.balance.toLocaleString();
+        }
+      }
+
+      // 餘額變化動畫
+      showBalanceChangeAnimation(newBalance) {
+        const animation = document.createElement('div');
+        animation.className = 'coin-animation';
+        animation.style.position = 'fixed';
+        animation.style.top = '20%';
+        animation.style.left = '50%';
+        animation.style.transform = 'translateX(-50%)';
+        animation.style.color = 'gold';
+        animation.textContent = `💰 餘額更新: ${newBalance.toLocaleString()}`;
+        
+        document.body.appendChild(animation);
+        
+        setTimeout(() => {
+          document.body.removeChild(animation);
+        }, 2000);
+      }
+
+      getBalance() {
+        return this.balance;
+      }
+    }
+
+    // 初始化Fay幣管理器
+    const fayCoinManager = new FayCoinManager();
+
+    // 全域函數
+    window.setQuickAmount = function(amount) {
+      const amountInput = document.getElementById('transferAmount');
+      if (amount === 'all') {
+        amountInput.value = fayCoinManager.getBalance();
+      } else {
+        amountInput.value = amount;
+      }
+    };
+
+    window.initiateTransfer = async function() {
+      const recipientEmail = document.getElementById('recipientEmail').value.trim();
+      const amount = parseInt(document.getElementById('transferAmount').value);
+      const note = document.getElementById('transferNote').value.trim();
+      
+      // 清除之前的訊息
+      hideMessages();
+      
+      // 驗證輸入
+      if (!recipientEmail) {
+        showError('請輸入收款人 Email');
+        return;
+      }
+      
+      if (!amount || amount <= 0) {
+        showError('請輸入有效的轉帳金額');
+        return;
+      }
+      
+      if (amount > fayCoinManager.getBalance()) {
+        showError('餘額不足');
+        return;
+      }
+      
+      // 確認轉帳
+      const confirmMsg = `確定要轉帳 ${amount} Fay幣給 ${recipientEmail} 嗎？`;
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+      
+      // 顯示載入狀態
+      showLoading(true);
+      const transferBtn = document.getElementById('transferBtn');
+      transferBtn.disabled = true;
+      transferBtn.textContent = '轉帳中...';
+      
+      try {
+        await fayCoinManager.transfer(recipientEmail, amount, note);
+        
+        showSuccess(`成功轉帳 ${amount} Fay幣給 ${recipientEmail}！`);
+        
+        // 清空表單
+        document.getElementById('recipientEmail').value = '';
+        document.getElementById('transferAmount').value = '';
+        document.getElementById('transferNote').value = '';
+        
+        // 重新載入轉帳歷史
+        loadTransferHistory();
+        
+      } catch (error) {
+        showError('轉帳失敗: ' + error.message);
+      } finally {
+        showLoading(false);
+        transferBtn.disabled = false;
+        transferBtn.textContent = '💸 立即轉帳';
+      }
+    };
+
+    // 載入轉帳歷史
+    window.loadTransferHistory = async function() {
+      const historyContainer = document.getElementById('historyContainer');
+      historyContainer.innerHTML = '<div style="text-align: center; color: #ccc; padding: 20px;">載入中...</div>';
+      
+      try {
+        // 查詢發送的轉帳
+        const sentQuery = query(
+          collection(db, 'transferHistory'),
+          where('senderEmail', '==', userEmail),
+          orderBy('timestamp', 'desc'),
+          limit(20)
+        );
+        
+        // 查詢接收的轉帳
+        const receivedQuery = query(
+          collection(db, 'transferHistory'),
+          where('recipientEmail', '==', userEmail),
+          orderBy('timestamp', 'desc'),
+          limit(20)
+        );
+        
+        const [sentSnapshot, receivedSnapshot] = await Promise.all([
+          getDocs(sentQuery),
+          getDocs(receivedQuery)
+        ]);
+        
+        // 合併並排序記錄
+        const allTransfers = [];
+        
+        sentSnapshot.forEach(doc => {
+          const data = doc.data();
+          allTransfers.push({
+            ...data,
+            id: doc.id,
+            direction: 'sent'
+          });
+        });
+        
+        receivedSnapshot.forEach(doc => {
+          const data = doc.data();
+          allTransfers.push({
+            ...data,
+            id: doc.id,
+            direction: 'received'
+          });
+        });
+        
+        // 按時間排序
+        allTransfers.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        if (allTransfers.length === 0) {
+          historyContainer.innerHTML = '<div style="text-align: center; color: #ccc; padding: 20px;">暫無轉帳記錄</div>';
+          return;
+        }
+        
+        // 渲染轉帳歷史
+        historyContainer.innerHTML = '';
+        allTransfers.forEach(transfer => {
+          const historyItem = document.createElement('div');
+          historyItem.className = 'history-item';
+          
+          const isSent = transfer.direction === 'sent';
+          const otherUser = isSent ? transfer.recipientEmail : transfer.senderEmail;
+          const typeText = isSent ? '轉出給' : '收到來自';
+          const amountClass = isSent ? 'amount-sent' : 'amount-received';
+          const amountPrefix = isSent ? '-' : '+';
+          
+          const timestamp = new Date(transfer.timestamp);
+          const timeString = timestamp.toLocaleString('zh-TW');
+          
+          historyItem.innerHTML = `
+            <div class="history-info">
+              <div class="history-type">${typeText}</div>
+              <div class="history-user">${otherUser}</div>
+              ${transfer.note ? `<div class="history-note" style="font-size: 12px; color: #888;">${transfer.note}</div>` : ''}
+              <div class="history-time">${timeString}</div>
+            </div>
+            <div class="history-amount ${amountClass}">
+              ${amountPrefix}${transfer.amount.toLocaleString()}
+            </div>
+          `;
+          
+          historyContainer.appendChild(historyItem);
+        });
+        
+      } catch (error) {
+        console.error('載入轉帳歷史失敗:', error);
+        historyContainer.innerHTML = '<div style="text-align: center; color: #ff6b6b; padding: 20px;">載入失敗，請稍後再試</div>';
+      }
+    };
+
+    // 輔助函數
+    function showError(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      setTimeout(hideMessages, 5000);
+    }
+
+    function showSuccess(message) {
+      const successDiv = document.getElementById('successMessage');
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+      setTimeout(hideMessages, 5000);
+    }
+
+    function hideMessages() {
+      document.getElementById('errorMessage').style.display = 'none';
+      document.getElementById('successMessage').style.display = 'none';
+    }
+
+    function showLoading(show) {
+      const overlay = document.getElementById('loadingOverlay');
+      overlay.style.display = show ? 'flex' : 'none';
+    }
+
+    // 需要從其他地方導入的函數
+    async function getDocs(query) {
+      const { getDocs } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+      return getDocs(query);
+    }
+
+    // 頁面載入完成後初始化
+    window.addEventListener('load', () => {
+      loadTransferHistory();
+    });
+  </script>
+</body>
+</html>

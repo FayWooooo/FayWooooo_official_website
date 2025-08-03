@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>FayWooooo - Email 會員登入 (限Gmail)</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "hanwangheiheavy";
+      background-image: linear-gradient(rgb(8, 19, 41), rgb(0, 0, 0));
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      padding: 40px 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 30px;
+      font-weight: normal;
+    }
+
+    input[type="email"],
+    input[type="text"] {
+      width: 92%;
+      padding: 12px 15px;
+      margin-bottom: 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px 15px;
+      border: none;
+      border-radius: 8px;
+      background-image: linear-gradient(to right, #0072ff, #00c6ff);
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 198, 255, 0.4);
+    }
+
+    #result {
+      margin-top: 15px;
+      font-size: 16px;
+      color: #ffd700;
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Email 會員登入 (限Gmail)</h1>
+    <input type="email" id="email" placeholder="輸入 Gmail" /><br />
+    <button onclick="sendCode()">寄送驗證碼</button><br />
+    <input type="text" id="code" placeholder="輸入驗證碼" /><br />
+    <button onclick="verifyCode()">登入</button>
+    <p id="result"></p>
+  </div>
+
+<script>
+  emailjs.init('VuhBknBXBuQYRZ-Tz'); // 換成你自己的 Public Key
+
+  window.sendCode = async function () {
+    const email = document.getElementById('email').value.trim();
+    if (!email || !email.includes('@gmail.com')) {
+      alert('請輸入有效的 Gmail');
+      return;
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    try {
+      await emailjs.send('FayWooooo', 'FayWooooo', {
+        to_email: email,
+        code: code
+      });
+      document.getElementById('result').textContent = '驗證碼已寄出！';
+      window.sentCode = code;
+    } catch (error) {
+      document.getElementById('result').textContent = '寄送失敗，請稍後再試。';
+      console.error('EmailJS Error:', error);
+    }
+  };
+
+  window.verifyCode = function () {
+    const email = document.getElementById('email').value.trim();
+    const inputCode = document.getElementById('code').value.trim();
+
+    if (inputCode === window.sentCode) {
+      document.getElementById('result').textContent = '登入成功！';
+
+      const emailData = email.toLowerCase();
+      const name = emailData.split('@')[0];
+      const photoURL = `https://www.gravatar.com/avatar/${md5(emailData)}?s=200&d=identicon`;
+
+      localStorage.setItem('userEmail', emailData);
+      localStorage.setItem('userName', name);
+      localStorage.setItem('userPhotoURL', photoURL);
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('justLoggedIn', 'true');
+
+      // 轉導回首頁
+      window.location.href = 'index.html';
+    } else {
+      document.getElementById('result').textContent = '驗證碼錯誤！';
+    }
+  };
+</script>
+
+</body>
+</html>

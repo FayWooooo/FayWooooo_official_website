@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>FayWooooo - 設定個人資料</title>
+  <style>
+    body {
+      font-family: "hanwangheiheavy";
+      background: linear-gradient(#081329, #000);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+    @media (max-width:768px){
+        .container{
+            width: 100%;
+            left: 5%;
+            right: 5%;
+        }
+    }
+    input[type="text"] {
+      width: 90%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(to right, #0072ff, #00c6ff);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      box-shadow: 0 6px 12px rgba(0,198,255,0.4);
+    }
+
+    .avatar-preview {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin-bottom: 15px;
+      border: 2px solid white;
+      cursor: pointer;
+    }
+
+    #back-link {
+      margin-top: 15px;
+      display: inline-block;
+      color: #ccc;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #photoInput {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <script>
+  if (localStorage.getItem('isLoggedIn') !== 'true') {
+    alert('⚠️ 請先登入才能查看任務');
+    window.location.href = 'index.html';
+  }
+</script>
+  <div class="container">
+    <h2>設定個人資料</h2>
+    <img id="avatarPreview" class="avatar-preview" src="" alt="頭像預覽" title="點擊更換頭像" />
+    <input type="file" id="photoInput" accept="image/*" />
+    <input type="text" id="nameInput" placeholder="輸入暱稱" />
+    <p id="nameLimitMsg" style="font-size: 14px; color: #ccc;text-align:center"></p>
+    <button onclick="saveProfile()">儲存設定</button>
+    <a href="index.html"><div id="back-link" onclick="goBack()">← 返回首頁</div></a>
+  </div>
+  <script>
+  // 如果沒登入，跳轉回首頁
+  if (localStorage.getItem('isLoggedIn') !== 'true') {
+    alert('⚠️ 請先登入才能進入此頁面');
+    window.location.href = 'index.html';
+  }
+  const userEmail = localStorage.getItem('userEmail') || '';
+const userName = localStorage.getItem('userName') || '';
+const userId = localStorage.getItem('userId') || ''; // 若你有建立過
+
+</script>
+  <script>
+    const avatar = document.getElementById('avatarPreview');
+    const photoInput = document.getElementById('photoInput');
+
+    function loadCurrentProfile() {
+      document.getElementById('nameInput').value = localStorage.getItem('userName') || '';
+      const photo = localStorage.getItem('userPhotoURL');
+      avatar.src = photo || 'https://www.gravatar.com/avatar/?d=identicon';
+    }
+
+    avatar.addEventListener('click', () => {
+      photoInput.click();
+    });
+
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('請選擇圖片檔案！');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        avatar.src = e.target.result;
+        localStorage.setItem('userPhotoURL', e.target.result); // ✅ 直接儲存 base64
+      };
+      reader.readAsDataURL(file);
+    });
+
+function saveProfile() {
+  const newName = document.getElementById('nameInput').value.trim();
+  const now = Date.now();
+
+  if (!newName) {
+    alert('請輸入暱稱');
+    return;
+  }
+
+  // 取得歷史改名紀錄（時間戳記陣列）
+  let history = JSON.parse(localStorage.getItem('nameChangeHistory') || '[]');
+
+  // 保留 14 天內的紀錄（以毫秒計算）
+  const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+  history = history.filter(ts => now - ts < TWO_WEEKS);
+
+  if (history.length >= 2) {
+    alert('⚠️ 您在 14 天內已更名 2 次，請稍後再試。');
+    return;
+  }
+
+  // 寫入名稱與歷史紀錄
+  localStorage.setItem('userName', newName);
+  history.push(now);
+  localStorage.setItem('nameChangeHistory', JSON.stringify(history));
+
+  alert('✅ 暱稱已儲存！');
+  location.href = 'index.html';
+}
+  </script>
+</body>
+</html>
