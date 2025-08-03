@@ -1149,7 +1149,7 @@ async function searchUsers() {
       if (email.toLowerCase().includes(searchTerm)) {
         users.add(JSON.stringify({
           email: email,
-          name: email || '未知'
+          name: data.userName || '未知'
         }));
       }
     });
@@ -1163,7 +1163,7 @@ async function searchUsers() {
         const user = JSON.parse(userStr);
         const item = document.createElement('div');
         item.className = 'user-result-item';
-        item.textContent = `${user.email} (${user.name})`;
+        item.textContent = `${user.email}`;
         item.onclick = () => {
           document.getElementById('search-user-email').value = user.email;
           resultsDiv.style.display = 'none';
@@ -1214,7 +1214,7 @@ window.updateUserTaskProgress = async function() {
       updateData.completedAt = new Date().toISOString();
     }
     
-    await updateDoc(progressDocRef, updateData);
+    await setDoc(progressDocRef, updateData, { merge: true });
     
     alert(`✅ 更新成功！\n用戶：${targetEmail}\n任務：${taskName}\n進度：${updateData.currentProgress}/${totalLength}`);
     
@@ -1380,7 +1380,6 @@ window.initAllUserTasks = async function() {
       await setDoc(progressDocRef, {
         userId: targetEmail,
         userEmail: targetEmail,
-        userName: targetEmail.split('@')[0],
         taskId: task.taskName,
         taskName: task.taskName,
         currentProgress: 0,
