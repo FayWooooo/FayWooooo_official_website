@@ -1138,7 +1138,7 @@ async function searchUsers() {
   try {
     // 使用 getDocs 來搜尋用戶
     const { getDocs } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
-    const usersCollection = collection(db, 'userTaskProgress');
+    const usersCollection = collection(db, 'userLoginRewards');
     const snapshot = await getDocs(usersCollection);
     
     const users = new Set(); // 使用 Set 避免重複
