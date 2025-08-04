@@ -4,12 +4,17 @@
   <meta charset="UTF-8" />
   <title>任務</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://www.moedict.tw/fonts/truetype/wang/wt014.ttf">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
   <script src="faycoin-sync.js" type="module"></script>
   <style>
+    @font-face {
+    font-family: 'hanwangheiheavy';
+    src: url('https://www.moedict.tw/fonts/truetype/wang/wt014.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
     body {
       background-image: linear-gradient(rgb(8,19,41), rgb(0,0,0));
       color: white;
@@ -1435,4 +1440,3 @@ window.fayCoinManager.subtractCoins(5)
   <script type="module" src="faycoin-sync.js"></script>
 </body>
 </html>
-
