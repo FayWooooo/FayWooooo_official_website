@@ -17,6 +17,8 @@ const urlsToCache = [
   "FayWooooo_official_website/Level1-_P.2.png",
   "FayWooooo_official_website/Level1-_P.3.png",
   "FayWooooo_official_website/bg.png",
+  "FayWooooo_official_website/icon-192.png",
+  "FayWooooo_official_website/icon-512.png",
   "FayWooooo_official_website/download.html",
   "FayWooooo_official_website/faycoin-sync.js" // 你網站的 JS
 ];
