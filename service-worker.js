@@ -1,23 +1,23 @@
 const CACHE_NAME = "fay-cache-v1";
 const urlsToCache = [
-  "/",
-  "/index.html",
-  "/logo.ico",
-  "/manifest.json",
-  "/about_us.html",
-  "/courses.html",
-  "/exchange.html",
-  "/earn.html",
-  "/free-coin.html",
-  "/leaderboard.html",
-  "/login.html",
-  "/setting.html",
-  "/icons/logo.ico",
-  "/Level1-_P.1.png",
-  "/Level1-_P.2.png",
-  "/Level1-_P.3.png",
-  "/bg.png",
-  "/faycoin-sync.js" // 你網站的 JS
+  "FayWooooo_official_website/",
+  "FayWooooo_official_website/index.html",
+  "FayWooooo_official_website/logo.ico",
+  "FayWooooo_official_website/manifest.json",
+  "FayWooooo_official_website/about_us.html",
+  "FayWooooo_official_website/courses.html",
+  "FayWooooo_official_website/exchange.html",
+  "FayWooooo_official_website/earn.html",
+  "FayWooooo_official_website/free-coin.html",
+  "FayWooooo_official_website/leaderboard.html",
+  "FayWooooo_official_website/login.html",
+  "FayWooooo_official_website/setting.html",
+  "FayWooooo_official_website/icons/logo.ico",
+  "FayWooooo_official_website/Level1-_P.1.png",
+  "FayWooooo_official_website/Level1-_P.2.png",
+  "FayWooooo_official_website/Level1-_P.3.png",
+  "FayWooooo_official_website/bg.png",
+  "FayWooooo_official_website/faycoin-sync.js" // 你網站的 JS
 ];
 
 // 安裝：快取必要檔案
