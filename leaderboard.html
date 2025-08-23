@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fay幣排行榜 - FayWooooo</title>
+  <link rel="icon" href="logo.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      background: linear-gradient(rgb(8, 19, 41), black);
+      font-family: 'hanwangheiheavy', sans-serif;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: gold;
+      font-size: 55px;
+      font-weight: normal;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 800px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+    }
+    th, td {
+      padding: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+    th {
+      background: linear-gradient(45deg, gold, orange);
+      color: black;
+      font-size: 20px;
+    }
+    tr:hover {
+      background: rgba(255,255,255,0.05);
+    }
+    .rank-1 { color: gold; font-size: 24px; font-weight: bold; }
+    .rank-2 { color: silver; font-size: 22px; font-weight: bold; }
+    .rank-3 { color: #cd7f32; font-size: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🏆 Fay幣排行榜 🏆</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>名次</th>
+        <th>Email</th>
+        <th>Fay幣</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboard-body">
+      <tr><td colspan="3">載入中...</td></tr>
+    </tbody>
+  </table>
+
+  <button onclick="window.location.href='index.html'">回首頁</button>
+
+<script>
+  // === Firebase 設定 ===
+  const firebaseConfig = {
+    apiKey: "AIzaSyAw3NxfRft4pke6TUl9gQ4a8P0LEm30zWo",
+    authDomain: "faycoin-bb878.firebaseapp.com",
+    projectId: "faycoin-bb878",
+    storageBucket: "faycoin-bb878.appspot.com",
+    messagingSenderId: "665116400856",
+    appId: "1:665116400856:web:a263d792c69129400d8bad",
+    measurementId: "G-ZSZZD4W1HX"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // 🚫 排除的帳號清單
+  const excludedEmails = [
+    "taiwandpp928@gmail.com",
+    "faywooooobs@gmail.com",
+    "faywooooo@gmail.com",
+    "guest@example.com"
+  ];
+
+  // ✨ Email 遮罩函數
+  function maskEmail(email) {
+    if (!email.includes("@")) return email; // 非 Email 直接回傳
+
+    const [localPart, domain] = email.split("@");
+    if (localPart.length <= 6) {
+      // 太短 → 保留頭尾各 1 個字元
+      return (
+        localPart[0] +
+        "*".repeat(Math.max(0, localPart.length - 2)) +
+        localPart.slice(-1) +
+        "@" +
+        domain
+      );
+    }
+
+    const first3 = localPart.slice(0, 5);
+    const last3 = localPart.slice(-5);
+    const masked = "*".repeat(localPart.length - 6);
+    return `${first3}${masked}${last3}@${domain}`;
+  }
+
+  // === 載入排行榜 ===
+  async function loadLeaderboard() {
+    try {
+      const snapshot = await db.collection('userLoginRewards').get();
+      let users = [];
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const email = (data.userEmail || '未知用戶').toLowerCase();
+
+        // 跳過黑名單帳號
+        if (excludedEmails.includes(email)) return;
+
+        users.push({
+          email: maskEmail(data.userEmail || "未知用戶"),
+          coins: data.coins || 0
+        });
+      });
+
+      // 排序 Fay 幣數量
+      users.sort((a, b) => b.coins - a.coins);
+
+      // 生成表格
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = '';
+      users.forEach((u, i) => {
+        const tr = document.createElement('tr');
+        let rankClass = '';
+        if (i === 0) rankClass = 'rank-1';
+        else if (i === 1) rankClass = 'rank-2';
+        else if (i === 2) rankClass = 'rank-3';
+
+        tr.innerHTML = `
+          <td class="${rankClass}">${i + 1}</td>
+          <td>${u.email}</td>
+          <td>${u.coins}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error('排行榜讀取失敗:', err);
+      document.getElementById('leaderboard-body').innerHTML =
+        '<tr><td colspan="3">❌ 載入失敗</td></tr>';
+    }
+  }
+
+  // 🚀 初始化
+  loadLeaderboard();
+</script>
+<script>
+  // 🚫 未登入就導回首頁
+  if (localStorage.getItem('isLoggedIn') !== 'true') {
+    alert('⚠️ 請先登入才能查看排行榜');
+    window.location.href = 'index.html';
+  }
+</script>
+
+
+</body>
+</html>

@@ -3,10 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <title>任務</title>
+    <link rel="icon" href="logo.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
+  <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+<!-- Fay幣串接功能 -->
+<script src="js/faycoin-link.js"></script>
+
   <script src="faycoin-sync.js" type="module"></script>
   <style>
     @font-face {
@@ -171,7 +178,7 @@
       cursor: default;
     }
     .task-card:hover {
-      background: rgba(255, 241, 160, 0.041);
+      cursor: move;
     }
     
     .task-card.completed {
@@ -423,7 +430,7 @@
   
   <!-- 任務管理面板 -->
   <div class="task-admin-panel" id="taskAdminPanel" style="display:none;">
-    <div class="task-admin-title">🎯 任務進度管理面板</div>
+    <div class="task-admin-title">任務進度管理面板</div>
     
     <div class="task-admin-controls">
       <input type="text" id="search-user-email" class="task-admin-input" placeholder="搜尋用戶 Email" />
@@ -457,11 +464,9 @@
   <!-- 任務區域 -->
   <div class="container" style="margin-top: 50px;">
     <div class="carousel-wrapper">
-      <button id="prev-btn" class="nav-btn">⬅</button>
       <div id="carousel" class="carousel-container">
         <div style="color:#ccc; font-size:20px; padding: 50px;">載入中...</div>
       </div>
-      <button id="next-btn" class="nav-btn">➡</button>
     </div>
   </div>
 
@@ -1091,18 +1096,123 @@ function updateCarousel(taskCount = tasks.length) {
   if (currentPage >= totalPages) currentPage = 0;
   carousel.style.transform = `translateX(-${currentPage * cardsPerPage * cardWidth}px)`;
 }
+function enableResponsiveDrag(wrapperSelector, containerSelector, updateFunc) {
+  const wrapper = document.querySelector(wrapperSelector);
+  const container = document.querySelector(containerSelector);
 
-document.getElementById('prev-btn').onclick = () => {
-  const totalPages = Math.ceil(tasks.length / cardsPerPage);
-  currentPage = (currentPage - 1 + totalPages) % totalPages;
-  updateCarousel();
-};
+  let isDown = false;
+  let startX, currentTranslate = 0, prevTranslate = 0, animationID;
+  let currentIndex = 0;
 
-document.getElementById('next-btn').onclick = () => {
-  const totalPages = Math.ceil(tasks.length / cardsPerPage);
-  currentPage = (currentPage + 1) % totalPages;
-  updateCarousel();
-};
+  // 判斷裝置大小（小於 768px 視為手機）
+  function isMobile() {
+    return window.innerWidth <= 768;
+  }
+
+  function setSliderPosition() {
+    container.style.transform = `translateX(${currentTranslate}px)`;
+  }
+
+  function animation() {
+    setSliderPosition();
+    if (isDown) requestAnimationFrame(animation);
+  }
+
+  // 桌機滑鼠
+  wrapper.addEventListener("mousedown", (e) => {
+    isDown = true;
+    startX = e.pageX;
+    wrapper.style.cursor = "grabbing";
+    animationID = requestAnimationFrame(animation);
+  });
+
+  wrapper.addEventListener("mousemove", (e) => {
+    if (!isDown) return;
+    const x = e.pageX;
+    const dx = x - startX;
+    currentTranslate = prevTranslate + dx;
+  });
+
+  wrapper.addEventListener("mouseup", (e) => {
+    cancelAnimationFrame(animationID);
+    isDown = false;
+    wrapper.style.cursor = "grab";
+
+    const dx = e.pageX - startX;
+
+    if (!isMobile()) {
+      // 桌機翻頁：一次 2 格
+      if (dx < -50) currentIndex += 2;
+      if (dx > 50) currentIndex -= 2;
+      if (currentIndex < 0) currentIndex = 0;
+      const maxIndex = container.children.length - 2;
+      if (currentIndex > maxIndex) currentIndex = maxIndex;
+
+      const itemWidth = container.children[0].offsetWidth + 20;
+      currentTranslate = -currentIndex * itemWidth;
+      prevTranslate = currentTranslate;
+      setSliderPosition();
+      if (typeof updateFunc === "function") updateFunc();
+    } else {
+      prevTranslate = currentTranslate;
+    }
+  });
+
+  wrapper.addEventListener("mouseleave", () => {
+    if (isDown) {
+      isDown = false;
+      wrapper.style.cursor = "grab";
+      cancelAnimationFrame(animationID);
+    }
+  });
+
+  // 手機觸控
+  wrapper.addEventListener("touchstart", (e) => {
+    isDown = true;
+    startX = e.touches[0].clientX;
+    animationID = requestAnimationFrame(animation);
+  });
+
+  wrapper.addEventListener("touchmove", (e) => {
+    if (!isDown) return;
+    const x = e.touches[0].clientX;
+    const dx = x - startX;
+    if (isMobile()) {
+      currentTranslate = prevTranslate + dx;
+    }
+  });
+
+  wrapper.addEventListener("touchend", (e) => {
+    cancelAnimationFrame(animationID);
+    isDown = false;
+
+    const dx = e.changedTouches[0].clientX - startX;
+
+    if (!isMobile()) {
+      // 桌機翻頁：一次 2 格
+      if (dx < -50) currentIndex += 2;
+      if (dx > 50) currentIndex -= 2;
+      if (currentIndex < 0) currentIndex = 0;
+      const maxIndex = container.children.length - 2;
+      if (currentIndex > maxIndex) currentIndex = maxIndex;
+
+      const itemWidth = container.children[0].offsetWidth + 20;
+      currentTranslate = -currentIndex * itemWidth;
+    }
+    prevTranslate = currentTranslate;
+    setSliderPosition();
+  });
+}
+
+// 啟用
+window.addEventListener("load", () => {
+  if (document.getElementById("items-container")) {
+    enableResponsiveDrag(".items-wrapper", "#items-container", updatePage);
+  }
+  if (document.getElementById("carousel")) {
+    enableResponsiveDrag(".carousel-wrapper", "#carousel", updateCarousel);
+  }
+});
 
 // 窗口大小改變時重新計算輪播
 window.addEventListener('resize', () => {
@@ -1432,8 +1542,6 @@ function setupAdminFeatures() {
   console.log('🎯 管理功能已初始化');
 }
 
-
-window.fayCoinManager.addCoins(10)
 window.fayCoinManager.subtractCoins(5)
 </script>
 

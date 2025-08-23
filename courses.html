@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>剪輯課程 - FayWooooo</title>
+    <link rel="icon" href="logo.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      background-image: linear-gradient(rgb(8,19,41), rgb(0,0,0));
+      color: white;
+      font-family: 'hanwangheiheavy', sans-serif;
+      margin: 20px;
+      text-align: center;
+      min-height: 100vh;
+    }
+    h1 { font-size: 50px; margin-bottom: 20px; }
+
+    .container {
+      background: rgba(255,255,255,0.07);
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+      max-width: 1200px;
+      margin: 30px auto;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+    }
+
+    /* 管理員面板 */
+    #adminPanel {
+      background: rgba(255, 0, 0, 0.1);
+      border: 2px solid #ff4444;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 30px;
+      display: none;
+    }
+    #adminPanel h2 { color: #ff4444; margin-bottom: 15px; }
+    .admin-btn {
+      background: linear-gradient(45deg, #4488ff, #66aaff);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    .admin-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(68, 136, 255, 0.4);
+    }
+
+    /* 課程進度條 */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 20px auto;
+      width: 120px;
+      position: relative;
+    }
+    .progress-container {
+      height: 100%;
+      width: 30px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 0%;
+      background: skyblue;
+      transition: height 0.8s ease;
+      border-radius: 15px 15px 0 0;
+    }
+    .progress-text { margin-bottom: 10px; font-size: 16px; color: #ccc; }
+
+    /* 課程內容 */
+    .course-content {
+      flex: 1;
+      text-align: left;
+      padding: 20px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+    }
+    .course-content h2 { color: gold; margin-bottom: 15px; }
+    .course-card {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      transition: all 0.5s ease;
+    }
+    .course-card.locked {
+      opacity: 0.4;
+      filter: blur(15px);
+      pointer-events: none;
+    }
+    .course-card h3 { margin-top: 0; color: #66aaff; }
+
+    /* Debug 區塊 */
+    #debugPanel {
+      background: rgba(0, 255, 0, 0.1);
+      border: 2px solid #44ff44;
+      border-radius: 15px;
+      padding: 10px;
+      margin: 20px auto;
+      max-width: 600px;
+      font-size: 14px;
+      text-align: left;
+    }
+    .course-img{
+        width: 480px;
+        border-radius: 10px;
+    }
+    #questionBox{
+        float: right;
+        width: 440px;
+        height: 630px;
+    }
+    /* ===== 響應式設計 ===== */
+
+/* 大螢幕 (桌機) 預設已存在，不需額外修改 */
+
+/* 平板 (寬度 <= 1024px) */
+@media (max-width: 1024px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .course-img {
+    width: 90%;   /* 縮小圖片 */
+    max-width: 600px;
+  }
+
+  #questionBox {
+    float: none;
+    width: 100%;
+    height: auto;
+    margin-top: 20px;
+  }
+}
+
+/* 手機 (寬度 <= 768px) */
+@media (max-width: 768px) {
+  body {
+    margin: 10px;
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .container {
+    flex-direction: column;
+    padding: 15px;
+    gap: 15px;
+  }
+
+  .steps {
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .progress-container {
+    width: 20px;
+    height: 200px;
+  }
+
+  .course-content {
+    padding: 15px;
+    font-size: 14px;
+  }
+
+  .course-img {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #questionBox {
+    width: 100%;
+    height: auto;
+    margin-top: 15px;
+  }
+
+  textarea#questionInput {
+    width: 100%;
+    height: 120px;
+  }
+}
+
+/* 特小手機 (寬度 <= 480px) */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 26px;
+  }
+
+  .course-content h2 {
+    font-size: 18px;
+  }
+
+  .course-card h3 {
+    font-size: 16px;
+  }
+
+  .admin-btn {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <h1>剪輯課程</h1>
+
+  <!-- 管理員面板 -->
+  <div id="adminPanel">
+    <h2>課程管理面板</h2>
+    <input type="email" id="userEmail" placeholder="輸入用戶 Email">
+    <br>
+    <button class="admin-btn" onclick="grantAccess()">開啟課程權限</button>
+    <button class="admin-btn" onclick="revokeAccess()">關閉課程權限</button>
+    <button class="admin-btn" onclick="upgradeLevel()">升級課程</button>
+    <button class="admin-btn" onclick="resetLevel()">重置課程等級</button>
+  </div>
+
+  <!-- 課程進度 + 課程內容 -->
+  <div class="container">
+    <!-- 左邊進度條 -->
+    <div class="steps">
+      <div class="progress-text">課程進度</div>
+      <div class="progress-container">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- 右邊課程內容 -->
+    <div class="course-content">
+      <h1 id="noAccessMsg" style="text-align: center; display: none;">請至兌換頁兌換課程權限</h1>
+      <div id="course1" class="course-card locked">
+        <h3>會員剪輯課程 Level1 - 短影音剪輯</h3>
+        <img class="course-img" src="Level1-_P.1.png">
+        <img class="course-img" src="Level1-_P.2.png">
+        <img class="course-img" src="Level1-_P.3.png">
+        <!-- 提問區 -->
+  <div id="questionBox" style="padding:20px; background:rgba(255,255,255,0.08); border-radius:10px;">
+    <h3 style="color:#66ff99;">提問區</h3>
+    <textarea id="questionInput" placeholder="輸入你的問題..." rows="4" style="width:95%; height: 80%; padding:10px; border-radius:8px; border:none; outline:none; resize:none;"></textarea>
+    <br><br>
+    <button onclick="sendQuestion()" style="background:linear-gradient(45deg,#44dd88,#66ffaa);color:#000;font-weight:bold;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;">
+      送出問題
+    </button>
+  </div>
+      </div>
+      <div id="course2">
+      <h1 style="text-align: center;">以下課程尚未開放</h1>
+      </div>
+      <div id="course3">
+      </div>
+      <div id="course4">
+      </div>
+    </div>
+  </div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAw3NxfRft4pke6TUl9gQ4a8P0LEm30zWo",
+    authDomain: "faycoin-bb878.firebaseapp.com",
+    projectId: "faycoin-bb878",
+    storageBucket: "faycoin-bb878.appspot.com",
+    messagingSenderId: "665116400856",
+    appId: "1:665116400856:web:a263d792c69129400d8bad"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const currentUser = localStorage.getItem("userEmail") || "";
+
+  // Faywooooo 是管理員
+  if (currentUser === "faywooooo@gmail.com") {
+    document.getElementById("adminPanel").style.display = "block";
+  }
+
+  // ======= 課程權限控制 =======
+  async function grantAccess() {
+    const email = document.getElementById("userEmail").value.trim();
+    if (!email) return alert("請輸入 Email");
+    const snap = await db.collection("userLoginRewards").where("userEmail","==",email).limit(1).get();
+    if (!snap.empty) {
+      await snap.docs[0].ref.update({ courseAccess: true });
+      alert(`已開啟 ${email} 的課程權限`);
+    }
+  }
+
+  async function revokeAccess() {
+    const email = document.getElementById("userEmail").value.trim();
+    if (!email) return alert("請輸入 Email");
+    const snap = await db.collection("userLoginRewards").where("userEmail","==",email).limit(1).get();
+    if (!snap.empty) {
+      await snap.docs[0].ref.update({ courseAccess: false, courseLevel: 0 });
+      alert(`已關閉 ${email} 的課程權限`);
+    }
+  }
+
+  async function upgradeLevel() {
+    const email = document.getElementById("userEmail").value.trim();
+    if (!email) return alert("請輸入 Email");
+    const snap = await db.collection("userLoginRewards").where("userEmail","==",email).limit(1).get();
+    if (!snap.empty) {
+      let data = snap.docs[0].data();
+      if (!data.courseAccess) return alert("此用戶尚未獲得課程權限！");
+      let level = (data.courseLevel || 0) + 1;
+      if (level > 4) level = 4;
+      await snap.docs[0].ref.update({ courseLevel: level });
+      alert(`已升級 ${email} 至課程 ${level}`);
+    }
+  }
+
+  async function resetLevel() {
+    const email = document.getElementById("userEmail").value.trim();
+    if (!email) return alert("請輸入 Email");
+    const snap = await db.collection("userLoginRewards").where("userEmail","==",email).limit(1).get();
+    if (!snap.empty) {
+      await snap.docs[0].ref.update({ courseLevel: 0 });
+      alert(`已重置 ${email} 的課程等級`);
+    }
+  }
+
+  // ======= 即時監聽課程進度 =======
+  if (currentUser && currentUser !== "faywooooo@gmail.com") {
+    db.collection("userLoginRewards")
+      .where("userEmail","==",currentUser)
+      .limit(1)
+      .onSnapshot((snap)=>{
+        if (snap.empty) return;
+        let data = snap.docs[0].data();
+
+        if (!data.courseAccess) {
+          document.getElementById("noAccessMsg").style.display = "block";
+          return;
+        } else {
+          document.getElementById("noAccessMsg").style.display = "none";
+        }
+        let level = data.courseLevel || 0;
+
+        // 更新進度條
+        const fill = document.getElementById("progressFill");
+        let percent = (level / 4) * 100;
+        fill.style.height = percent + "%";
+
+        // 更新課程卡片解鎖
+        for (let i=1;i<=4;i++) {
+          const card = document.getElementById("course"+i);
+          if (i <= level) card.classList.remove("locked");
+          else card.classList.add("locked");
+        }
+      });
+  }
+</script>
+<script>
+  // 🚫 未登入就導回首頁
+  if (localStorage.getItem('isLoggedIn') !== 'true') {
+    alert('⚠️ 請先登入才能查看課程');
+    window.location.href = 'index.html';
+  }
+</script>
+
+<script>
+
+  // 禁止右鍵
+  document.addEventListener("contextmenu", e => e.preventDefault());
+
+// 禁止 F12、Ctrl+Shift+I、Ctrl+Shift+J、Ctrl+U、Ctrl+S
+document.addEventListener("keydown", e => {
+  if (e.key === "F12" || 
+      (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) || 
+      (e.ctrlKey && (e.key.toLowerCase() === "u" || e.key.toLowerCase() === "s"))) {
+    e.preventDefault();
+    alert("此功能已被禁用");
+  }
+});
+
+    setInterval(() => {
+    if (window.outerWidth - window.innerWidth > 160 || 
+        window.outerHeight - window.innerHeight > 160) {
+      document.body.innerHTML = "<h1 style='color:red;text-align:center;margin-top:50px;'>檢查模式已開啟，頁面已被鎖定</h1>";
+    }
+  }, 1000);
+    document.addEventListener("keydown", function (e) {
+    // Ctrl + U
+    if (e.ctrlKey && e.key.toLowerCase() === "u") {
+      e.preventDefault();
+      alert("此功能已被禁用");
+    }
+  });
+</script>
+<script>
+  // 初始化 EmailJS
+  emailjs.init("VuhBknBXBuQYRZ-Tz");
+
+  let questionCount = parseInt(localStorage.getItem("questionCount") || "0");
+
+  function sendQuestion() {
+    if (questionCount >= 5) {
+      alert("❌ 你已經用完 5 次提問機會！");
+      return;
+    }
+
+    const question = document.getElementById("questionInput").value.trim();
+    if (!question) {
+      alert("請輸入問題內容！");
+      return;
+    }
+
+    // 寄送 Email，把 textarea 的文字傳到 Gmail
+    emailjs.send("FayWooooo", "template_18oxt0a", {
+      from_name: currentUser || "匿名用戶",
+      message: question,   // 🔥 這裡就是 textarea 的內容
+      to_email: "faywooooo@gmail.com"
+    }).then(() => {
+      questionCount++;
+      localStorage.setItem("questionCount", questionCount);
+      alert(`✅ 問題已送出！（剩餘 ${5 - questionCount} 次機會）`);
+      document.getElementById("questionInput").value = "";
+    }).catch((err) => {
+      console.error("EmailJS 發送錯誤：", err);
+      alert("發送失敗，請稍後再試！");
+    });
+  }
+</script>
+
+</body>
+</html>

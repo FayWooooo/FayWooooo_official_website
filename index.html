@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <title>FayWooooo - 官方網站</title>
   <link rel="icon" href="logo.ico" type="image/x-icon">
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#222222">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="faycoin-sync.js" type="module"></script>
 
@@ -24,6 +27,15 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+
+
+  if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js")
+      .then(() => console.log("✅ Service Worker 已註冊"))
+      .catch(err => console.error("❌ Service Worker 註冊失敗:", err));
+  });
+}
 </script>
 
 
@@ -924,6 +936,8 @@
             <a class="dropdown-item" href="exchange.html">
               Fay幣：<span id="coin-count" style="color: gold;">${currentUserCoinBalance}</span><br> ➜ 兌換
             </a>
+              <a href="leaderboard.html" class="dropdown-item">Fay幣排行榜</a> <!-- 🆕 新增 -->
+  <a href="courses.html" class="dropdown-item">課程</a> <!-- 🆕 新增 -->
             <a class="dropdown-item" href="earn.html">任務</a>
             <a class="dropdown-item" href="setting.html">設定</a>
             <a class="dropdown-item" href="#" id="logout-link">登出</a>
@@ -1355,6 +1369,8 @@ async function showUserMenu(email) {
           <a class="dropdown-item" href="exchange.html">
             Fay幣：<span id="coin-count" style="color: gold;">${currentUserCoinBalance}</span><br> ➜ 兌換
           </a>
+            <a href="leaderboard.html" class="dropdown-item">Fay幣排行榜</a> <!-- 🆕 新增 -->
+  <a href="courses.html" class="dropdown-item">課程</a> <!-- 🆕 新增 -->
           <a class="dropdown-item" href="earn.html">任務</a>
           <a class="dropdown-item" href="setting.html">設定</a>
           <a class="dropdown-item" href="#" id="logout-link">登出</a>

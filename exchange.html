@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Fay幣兌換區 - FayWooooo</title>
+    <link rel="icon" href="logo.ico" type="image/x-icon">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     @font-face {
@@ -55,6 +56,7 @@
       max-width: 250px;
       flex-shrink: 0;
       background: rgba(255,255,255,0.05);
+      user-select: none;
     }
     button {
       background-color: gold;
@@ -169,7 +171,7 @@
   <h1 style="font-size: 55px;font-weight:normal;color:white;">Fay幣兌換區</h1>
   
   <div id="admin-panel" class="admin-panel">
-    <div class="admin-title">🔧 官方管理面板</div>
+    <div class="admin-title">官方管理面板</div>
     <div class="admin-controls">
       <input type="text" id="user-email-input" class="admin-input" placeholder="輸入帳號 Email" list="user-suggestions"/>
       <datalist id="user-suggestions"></datalist>
@@ -188,8 +190,6 @@
 
   <div class="exchange-container">
     <div class="balance">目前餘額：<span id="coin-balance">0</span> Fay幣</div>
-    <button id="prev-btn" class="nav-btn">⬅</button>
-    <button id="next-btn" class="nav-btn">➡</button>
     <div class="items-wrapper">
       <div id="items-container" class="items-container"></div>
     </div>
@@ -484,10 +484,123 @@
         console.error("❌ 讀取帳號清單失敗", err);
       }
     }
+function enableResponsiveDrag(wrapperSelector, containerSelector, updateFunc) {
+  const wrapper = document.querySelector(wrapperSelector);
+  const container = document.querySelector(containerSelector);
 
-    // 事件監聽器
-    document.getElementById('next-btn').addEventListener('click', nextPage);
-    document.getElementById('prev-btn').addEventListener('click', prevPage);
+  let isDown = false;
+  let startX, currentTranslate = 0, prevTranslate = 0, animationID;
+  let currentIndex = 0;
+
+  // 判斷裝置大小（小於 768px 視為手機）
+  function isMobile() {
+    return window.innerWidth <= 768;
+  }
+
+  function setSliderPosition() {
+    container.style.transform = `translateX(${currentTranslate}px)`;
+  }
+
+  function animation() {
+    setSliderPosition();
+    if (isDown) requestAnimationFrame(animation);
+  }
+
+  // 桌機滑鼠
+  wrapper.addEventListener("mousedown", (e) => {
+    isDown = true;
+    startX = e.pageX;
+    wrapper.style.cursor = "grabbing";
+    animationID = requestAnimationFrame(animation);
+  });
+
+  wrapper.addEventListener("mousemove", (e) => {
+    if (!isDown) return;
+    const x = e.pageX;
+    const dx = x - startX;
+    currentTranslate = prevTranslate + dx;
+  });
+
+  wrapper.addEventListener("mouseup", (e) => {
+    cancelAnimationFrame(animationID);
+    isDown = false;
+    wrapper.style.cursor = "grab";
+
+    const dx = e.pageX - startX;
+
+    if (!isMobile()) {
+      // 桌機翻頁：一次 2 格
+      if (dx < -50) currentIndex += 2;
+      if (dx > 50) currentIndex -= 2;
+      if (currentIndex < 0) currentIndex = 0;
+      const maxIndex = container.children.length - 2;
+      if (currentIndex > maxIndex) currentIndex = maxIndex;
+
+      const itemWidth = container.children[0].offsetWidth + 20;
+      currentTranslate = -currentIndex * itemWidth;
+      prevTranslate = currentTranslate;
+      setSliderPosition();
+      if (typeof updateFunc === "function") updateFunc();
+    } else {
+      prevTranslate = currentTranslate;
+    }
+  });
+
+  wrapper.addEventListener("mouseleave", () => {
+    if (isDown) {
+      isDown = false;
+      wrapper.style.cursor = "grab";
+      cancelAnimationFrame(animationID);
+    }
+  });
+
+  // 手機觸控
+  wrapper.addEventListener("touchstart", (e) => {
+    isDown = true;
+    startX = e.touches[0].clientX;
+    animationID = requestAnimationFrame(animation);
+  });
+
+  wrapper.addEventListener("touchmove", (e) => {
+    if (!isDown) return;
+    const x = e.touches[0].clientX;
+    const dx = x - startX;
+    if (isMobile()) {
+      currentTranslate = prevTranslate + dx;
+    }
+  });
+
+  wrapper.addEventListener("touchend", (e) => {
+    cancelAnimationFrame(animationID);
+    isDown = false;
+
+    const dx = e.changedTouches[0].clientX - startX;
+
+    if (!isMobile()) {
+      // 桌機翻頁：一次 2 格
+      if (dx < -50) currentIndex += 2;
+      if (dx > 50) currentIndex -= 2;
+      if (currentIndex < 0) currentIndex = 0;
+      const maxIndex = container.children.length - 2;
+      if (currentIndex > maxIndex) currentIndex = maxIndex;
+
+      const itemWidth = container.children[0].offsetWidth + 20;
+      currentTranslate = -currentIndex * itemWidth;
+    }
+    prevTranslate = currentTranslate;
+    setSliderPosition();
+  });
+}
+
+// 啟用
+window.addEventListener("load", () => {
+  if (document.getElementById("items-container")) {
+    enableResponsiveDrag(".items-wrapper", "#items-container", updatePage);
+  }
+  if (document.getElementById("carousel")) {
+    enableResponsiveDrag(".carousel-wrapper", "#carousel", updateCarousel);
+  }
+});
 
     // 🔹 頁面載入時初始化
     window.onload = async () => {

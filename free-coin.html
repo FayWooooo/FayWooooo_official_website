@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>免費領取 Fay 幣</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <link rel="icon" href="logo.ico" type="image/x-icon">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body style="text-align:center; font-family:sans-serif; background:#111; color:white;">
+  <h1>🎁 免費領取 Fay 幣 🎁</h1>
+  <p>每個帳號限領一次</p>
+  <button id="claimBtn" style="padding:10px 20px; font-size:18px; border-radius:10px; cursor:pointer;">點我領取 50 Fay 幣</button>
+
+  <script>
+    // ✅ 一進頁面先檢查登入狀態，未登入直接跳回首頁
+    if (localStorage.getItem("isLoggedIn") !== "true") {
+      alert("⚠️ 請先登入帳號");
+      window.location.href = "index.html";
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAw3NxfRft4pke6TUl9gQ4a8P0LEm30zWo",
+      authDomain: "faycoin-bb878.firebaseapp.com",
+      projectId: "faycoin-bb878",
+      storageBucket: "faycoin-bb878.appspot.com",
+      messagingSenderId: "665116400856",
+      appId: "1:665116400856:web:a263d792c69129400d8bad",
+      measurementId: "G-ZSZZD4W1HX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    document.getElementById("claimBtn").addEventListener("click", async () => {
+      const email = localStorage.getItem("userEmail");
+      if (!email) {
+        alert("⚠️ 找不到登入帳號，請重新登入");
+        window.location.href = "index.html";
+        return;
+      }
+
+      try {
+        const snapshot = await db.collection("userLoginRewards")
+          .where("userEmail", "==", email)
+          .limit(1)
+          .get();
+
+        if (!snapshot.empty) {
+          const docRef = snapshot.docs[0].ref;
+          const data = snapshot.docs[0].data();
+
+          if (data.hasClaimedFreeGift) {
+            alert("❌ 你已經領過囉，每個帳號只能領一次！");
+            return;
+          }
+
+          await docRef.update({
+            hasClaimedFreeGift: true,
+            coins: firebase.firestore.FieldValue.increment(50)
+          });
+
+          alert("🎉 恭喜！你獲得了 50 Fay 幣");
+          localStorage.setItem("fayCoinBalance", (data.coins + 50).toString());
+          window.dispatchEvent(new CustomEvent("fayCoinChanged", {
+            detail: { newBalance: data.coins + 50 }
+          }));
+          window.location.href = "exchange.html"; // 領完自動跳到兌換頁
+        } else {
+          // 如果帳號還沒資料，建立新紀錄
+          await db.collection("userLoginRewards").add({
+            userEmail: email,
+            coins: 50,
+            hasClaimedFreeGift: true,
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          alert("🎉 恭喜！你獲得了 50 Fay 幣");
+          localStorage.setItem("fayCoinBalance", "50");
+          window.dispatchEvent(new CustomEvent("fayCoinChanged", { detail: { newBalance: 50 } }));
+          window.location.href = "exchange.html";
+        }
+      } catch (error) {
+        console.error("❌ 領取失敗：", error);
+        alert("系統錯誤，請稍後再試");
+      }
+    });
+  </script>
+</body>
+</html>
