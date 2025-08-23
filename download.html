@@ -1,48 +1,55 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FayWooooo App</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#222222">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <h1>📲 歡迎使用 FayWooooo App</h1>
-  <p>這是專屬的 PWA 應用程式版本。</p>
-  <button id="install-btn">安裝 App</button>
+const CACHE_NAME = "fay-cache-v1";
+const urlsToCache = [
+  "FayWooooo_official_website/",
+  "FayWooooo_official_website/index.html",
+  "FayWooooo_official_website/logo.ico",
+  "FayWooooo_official_website/manifest.json",
+  "FayWooooo_official_website/about_us.html",
+  "FayWooooo_official_website/courses.html",
+  "FayWooooo_official_website/exchange.html",
+  "FayWooooo_official_website/earn.html",
+  "FayWooooo_official_website/free-coin.html",
+  "FayWooooo_official_website/leaderboard.html",
+  "FayWooooo_official_website/login.html",
+  "FayWooooo_official_website/setting.html",
+  "FayWooooo_official_website/icons/logo.ico",
+  "FayWooooo_official_website/Level1-_P.1.png",
+  "FayWooooo_official_website/Level1-_P.2.png",
+  "FayWooooo_official_website/Level1-_P.3.png",
+  "FayWooooo_official_website/bg.png",
+  "FayWooooo_official_website/icon-192.png",
+  "FayWooooo_official_website/icon-512.png",
+  "FayWooooo_official_website/download.html",
+  "FayWooooo_official_website/faycoin-sync.js" // 你網站的 JS
+];
 
-  <script>
-    let deferredPrompt;
-const installBtn = document.getElementById("install-btn");
-
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = "block";
+// 安裝：快取必要檔案
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+  );
 });
 
-installBtn.addEventListener("click", async () => {
-  installBtn.style.display = "none";
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  if (outcome === "accepted") {
-    alert("✅ FayWooooo App 已安裝！");
-  } else {
-    alert("❌ 你取消了安裝，可以隨時再試一次！");
-    installBtn.style.display = "block";
-  }
-  deferredPrompt = null;
+// 攔截請求：優先用快取，否則抓網路
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
+  );
 });
 
-// 註冊 Service Worker
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js")
-    .then(() => console.log("✅ Service Worker 已註冊"))
-    .catch(err => console.error("❌ SW 註冊失敗", err));
-}
-
-  </script>
-</body>
-</html>
+// 更新快取：刪掉舊版本
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      )
+    )
+  );
+});
