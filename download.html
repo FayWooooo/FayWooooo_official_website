@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FayWooooo App</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#222222">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>📲 歡迎使用 FayWooooo App</h1>
+  <p>這是專屬的 PWA 應用程式版本。</p>
+  <button id="install-btn">安裝 App</button>
+
+  <script>
+    let deferredPrompt;
+const installBtn = document.getElementById("install-btn");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = "block";
+});
+
+installBtn.addEventListener("click", async () => {
+  installBtn.style.display = "none";
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === "accepted") {
+    alert("✅ FayWooooo App 已安裝！");
+  } else {
+    alert("❌ 你取消了安裝，可以隨時再試一次！");
+    installBtn.style.display = "block";
+  }
+  deferredPrompt = null;
+});
+
+// 註冊 Service Worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
+    .then(() => console.log("✅ Service Worker 已註冊"))
+    .catch(err => console.error("❌ SW 註冊失敗", err));
+}
+
+  </script>
+</body>
+</html>
