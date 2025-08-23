@@ -1,55 +1,114 @@
-const CACHE_NAME = "fay-cache-v1";
-const urlsToCache = [
-  "FayWooooo_official_website/",
-  "FayWooooo_official_website/index.html",
-  "FayWooooo_official_website/logo.ico",
-  "FayWooooo_official_website/manifest.json",
-  "FayWooooo_official_website/about_us.html",
-  "FayWooooo_official_website/courses.html",
-  "FayWooooo_official_website/exchange.html",
-  "FayWooooo_official_website/earn.html",
-  "FayWooooo_official_website/free-coin.html",
-  "FayWooooo_official_website/leaderboard.html",
-  "FayWooooo_official_website/login.html",
-  "FayWooooo_official_website/setting.html",
-  "FayWooooo_official_website/icons/logo.ico",
-  "FayWooooo_official_website/Level1-_P.1.png",
-  "FayWooooo_official_website/Level1-_P.2.png",
-  "FayWooooo_official_website/Level1-_P.3.png",
-  "FayWooooo_official_website/bg.png",
-  "FayWooooo_official_website/icon-192.png",
-  "FayWooooo_official_website/icon-512.png",
-  "FayWooooo_official_website/download.html",
-  "FayWooooo_official_website/faycoin-sync.js" // 你網站的 JS
-];
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FayWooooo App</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#222222">
+  <style>
+    /* 全域設定 */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Microsoft JhengHei", Arial, sans-serif;
+  background: #111; /* 深色背景 */
+  color: #fff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100vh;
+}
 
-// 安裝：快取必要檔案
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
+/* 標題 */
+h1 {
+  font-size: 2.2rem;
+  margin-bottom: 15px;
+  color: #f5c518; /* 金色強調 */
+  text-shadow: 0 0 10px rgba(245, 197, 24, 0.6);
+}
+
+/* 說明文字 */
+p {
+  font-size: 1.1rem;
+  color: #ccc;
+  margin-bottom: 30px;
+}
+
+/* 安裝按鈕 */
+#install-btn {
+  padding: 14px 28px;
+  display: flex;
+  background: linear-gradient(135deg, #f5c518, #d4a017);
+  color: #111;
+  font-size: 18px;
+  font-weight: bold;
+  max-width: 15%;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(245, 197, 24, 0.6);
+  transition: all 0.25s ease;
+}
+
+#install-btn:hover {
+  background: linear-gradient(135deg, #ffd84d, #f5c518);
+  transform: scale(1.05);
+  box-shadow: 0 0 18px rgba(245, 197, 24, 0.9);
+}
+
+/* Footer */
+footer {
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+  </style>
+</head>
+<body>
+  <h1>下載 FayWooooo App</h1>
+  <center><button id="install-btn">安裝 App</button></center>
+
+  <script>
+    let deferredPrompt;
+const installBtn = document.getElementById("install-btn");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
 });
 
-// 攔截請求：優先用快取，否則抓網路
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
+
+installBtn.addEventListener("click", async () => {
+  if (!deferredPrompt) {
+    alert("❌ PWA 尚未準備好安裝（請確認 manifest.json 與 icons 正確）");
+    return;
+  }
+
+  installBtn.style.display = "none";
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === "accepted") {
+    alert("✅ FayWooooo App 已安裝！");
+  } else {
+    alert("❌ 你取消了安裝，可以隨時再試一次！");
+    installBtn.style.display = "block";
+  }
+  deferredPrompt = null;
 });
 
-// 更新快取：刪掉舊版本
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
-    )
-  );
-});
+
+// 註冊 Service Worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
+    .then(() => console.log("✅ Service Worker 已註冊"))
+    .catch(err => console.error("❌ SW 註冊失敗", err));
+}
+
+  </script>
+</body>
+</html>
