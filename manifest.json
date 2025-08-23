@@ -1,16 +1,16 @@
 {
   "name": "FayWooooo",
   "short_name": "FayWooooo",
-  "start_url": "FayWooooo_official_website/index.html",
+  "start_url": "/FayWooooo_official_website/index.html",
   "scope": "/FayWooooo_official_website/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#222222",
   "icons": [
     {
-      "src": "FayWooooo_official_website/logo.ico",
+      "src": "FayWooooo_official_website/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/x-icon"
+      "type": "image/png"
     },
     {
       "src": "FayWooooo_official_website/icons/icon-512.png",
