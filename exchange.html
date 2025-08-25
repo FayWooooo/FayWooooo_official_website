@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <title>Fay幣兌換區 - FayWooooo</title>
     <link rel="icon" href="logo.ico" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script>
+  emailjs.init("Rna6NHThG_VW9eyRE"); // ⚠️ 填你的 Public Key
+</script>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     @font-face {
@@ -158,6 +163,79 @@
       font-size: 12px;
       margin-top: 10px;
     }
+    .chest-container {
+  background: rgba(255,255,255,0.05);
+  padding: 20px;
+  border-radius: 15px;
+  margin-top: 30px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+#buy-chest-btn {
+  background: linear-gradient(45deg, gold, orange);
+  color: black;
+  border: none;
+  padding: 12px 25px;
+  font-size: 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+#buy-chest-btn:hover {
+  transform: scale(1.1);
+  background: linear-gradient(45deg, orange, gold);
+}
+.chest-box {
+  margin: 20px auto;
+  width: 120px;
+  height: 100px;
+  position: relative;
+  perspective: 1000px;
+}
+.chest-lid {
+  width: 120px;
+  height: 40px;
+  background: gold;
+  border: 3px solid #8b5a2b;
+  position: absolute;
+  top: 0;
+  transform-origin: bottom;
+  transition: transform 0.8s ease;
+  border-radius: 5px 5px 0 0;
+}
+.chest-body {
+  width: 120px;
+  height: 60px;
+  background: #cd853f;
+  border: 3px solid #8b5a2b;
+  position: absolute;
+  bottom: 0;
+  border-radius: 0 0 5px 5px;
+}
+.chest-open .chest-lid {
+  transform: rotateX(-120deg);
+}
+
+/* 抽獎公告 Toast */
+.reward-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(50px);
+  background: rgba(0,0,0,0.8);
+  color: gold;
+  padding: 12px 25px;
+  border-radius: 10px;
+  font-size: 18px;
+  opacity: 0;
+  transition: all 0.5s ease;
+  z-index: 10000;
+}
+.reward-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
   </style>
 </head>
 <body>
@@ -193,6 +271,19 @@
     <div class="items-wrapper">
       <div id="items-container" class="items-container"></div>
     </div>
+    <!-- ===== Fay寶箱系統 ===== -->
+<div class="chest-container">
+  <h2 style="color:gold;">💎 Fay寶箱 💎</h2>
+  <p>花費 <b>100 Fay幣</b> 購買寶箱，隨機獲得獎勵！</p>
+  <button id="buy-chest-btn">購買寶箱</button>
+
+  <div id="chest-box" class="chest-box">
+    <div class="chest-lid"></div>
+    <div class="chest-body"></div>
+  </div>
+  <p id="reward-result" style="margin-top:15px;font-size:18px;color:lightgreen;"></p>
+</div>
+
   </div>
   
   <button style="margin-top:20px;" onclick="window.location.href='index.html'">回首頁</button>
@@ -645,6 +736,133 @@ const reloadValue = localStorage.getItem(reloadKey);
 if (reloadValue) {
   localStorage.removeItem(reloadKey);
   location.reload();
+}
+// Fay寶箱獎勵池 (含機率)
+const chestRewards = [
+  { name: "30 Fay幣", type: "coins", amount: 30, chance: 40 },
+  { name: "50 Fay幣", type: "coins", amount: 50, chance: 30 },
+  { name: "70 Fay幣", type: "coins", amount: 70, chance: 12 },
+  { name: "500 Fay幣", type: "coins", amount: 100, chance: 2 },
+  { name: "1000 Fay幣", type: "coins", amount: 500, chance: 1 },
+  { name: "@你叫你爸爸5次", type: "item", chance: 7 },
+  { name: "給你管+讓全部管可以@All", type: "item", chance: 5 },
+  { name: "下部影片你決定", type: "item", chance: 1 },
+  { name: "拍片宣傳你", type: "item", chance: 1 },
+  { name: "幫你做一支短片", type: "item", chance: 0.5 },
+  { name: "1對1教你剪輯(非圖文課程)", type: "item", chance: 0.5 }
+];
+
+// 加權隨機
+function getWeightedReward() {
+  const total = chestRewards.reduce((s,r)=>s+r.chance,0);
+  const rand = Math.random()*total;
+  let cum = 0;
+  for (let r of chestRewards) {
+    cum += r.chance;
+    if (rand < cum) return r;
+  }
+  return chestRewards[chestRewards.length-1];
+}
+async function buyChest() {
+  let balance = await loadBalance();
+  if (balance < 100) {
+    alert("❌ Fay幣不足，無法購買寶箱！");
+    return;
+  }
+
+  // 扣 100 Fay幣
+  balance -= 100;
+  await saveBalance(balance);
+
+  // 播放開箱動畫
+  const chest = document.getElementById("chest-box");
+  chest.classList.add("chest-open");
+
+  setTimeout(async ()=>{
+    chest.classList.remove("chest-open");
+    const reward = getWeightedReward();
+
+    let msg = "";
+    if (reward.type === "coins") {
+      balance += reward.amount;
+      await saveBalance(balance);
+      msg = `🎉 恭喜獲得 ${reward.name}！目前餘額：${balance}`;
+    } else {
+      msg = `🎉 恭喜獲得 ${reward.name}！`;
+
+      // 📧 抽到 items 類型時寄信
+      sendRewardEmail(localStorage.getItem("userEmail"), reward.name);
+    }
+    document.getElementById("reward-result").innerText = msg;
+
+    // Firestore 紀錄
+    recordChestReward(localStorage.getItem("userEmail"), reward.name);
+    uploadRecord(getUserId(), balance, `寶箱獲得: ${reward.name}`);
+  }, 1200);
+}
+
+document.getElementById("buy-chest-btn").addEventListener("click", buyChest);
+async function recordChestReward(userEmail, rewardName) {
+  if (!userEmail) return;
+  try {
+    await db.collection("chestRewardsHistory").add({
+      userEmail: userEmail,
+      reward: rewardName,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) { console.error(err); }
+}
+
+let firstLoad = true;
+function listenToChestRewards() {
+  db.collection("chestRewardsHistory").orderBy("timestamp","desc").limit(5)
+    .onSnapshot(snapshot=>{
+      // 首次載入 → 只建立 baseline，不顯示
+      if (firstLoad) {
+        firstLoad = false;
+        return;
+      }
+      snapshot.docChanges().forEach(change=>{
+        if (change.type==="added") {
+          const data = change.doc.data();
+          showRewardAnnouncement(data.userEmail, data.reward);
+        }
+      });
+    });
+}
+
+
+function showRewardAnnouncement(userEmail, reward) {
+  const shortEmail = userEmail ? userEmail.replace(/(.{3}).+(@.+)/, "$1***$2") : "玩家";
+  const msg = `🎉 ${shortEmail} 抽中了 ${reward}！`;
+  const toast = document.createElement("div");
+  toast.className="reward-toast";
+  toast.innerText=msg;
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.classList.add("show"),100);
+  setTimeout(()=>{
+    toast.classList.remove("show");
+    setTimeout(()=>toast.remove(),500);
+  },5000);
+}
+window.onload = async ()=>{
+  await loadBalance();
+  await fetchItems();   // 原本的商品兌換
+  listenToChestRewards(); // 啟動公告監聽
+};
+function sendRewardEmail(userEmail, rewardName) {
+  const templateParams = {
+    user: userEmail || "未知玩家",
+    reward: rewardName,
+    time: new Date().toLocaleString()
+  };
+
+  emailjs.send("service_g83kh8j", "template_7r9kdt9", templateParams)
+    .then(function(response) {
+      console.log("✅ Email 發送成功:", response.status, response.text);
+    }, function(error) {
+      console.error("❌ Email 發送失敗:", error);
+    });
 }
 
 </script>
