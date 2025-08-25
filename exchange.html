@@ -695,17 +695,22 @@ window.addEventListener("load", () => {
 
     // 🔹 頁面載入時初始化
     window.onload = async () => {
-      await loadBalance(); // 等待餘額載入完成
-      fetchItems();
-      setInterval(fetchItems, 5000);
+  await loadBalance();
+  await fetchItems();
+  setInterval(fetchItems, 5000);
 
-      const email = localStorage.getItem('userEmail');
-      const isAdmin = email === 'faywooooo@gmail.com';
-      if (isAdmin) {
-        document.getElementById('admin-panel').style.display = 'block';
-        loadAllUsersFromFirebase();
-      }
-    };
+  const email = localStorage.getItem('userEmail');
+  const adminEmails = ["faywooooo@gmail.com", "faywooooobs@gmail.com"]; // 允許多個帳號
+  const isAdmin = adminEmails.includes(email);
+
+  if (isAdmin) {
+    document.getElementById('admin-panel').style.display = 'block';
+    loadAllUsersFromFirebase();
+  }
+
+  listenToChestRewards(); // 啟動公告監聽
+};
+
 
     // 監聽 Fay幣變化事件（來自其他頁面）
     window.addEventListener('fayCoinChanged', async (event) => {
@@ -845,11 +850,6 @@ function showRewardAnnouncement(userEmail, reward) {
     setTimeout(()=>toast.remove(),500);
   },5000);
 }
-window.onload = async ()=>{
-  await loadBalance();
-  await fetchItems();   // 原本的商品兌換
-  listenToChestRewards(); // 啟動公告監聽
-};
 function sendRewardEmail(userEmail, rewardName) {
   const templateParams = {
     user: userEmail || "未知玩家",
