@@ -185,6 +185,21 @@
   transform: scale(1.1);
   background: linear-gradient(45deg, orange);
 }
+#buy-normal-chest-btn {
+  background: linear-gradient(45deg, gold);
+  color: black;
+  border: none;
+  padding: 12px 25px;
+  font-size: 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+#buy-normal-chest-btn:hover {
+  transform: scale(1.1);
+  background: linear-gradient(45deg, orange);
+}
 .chest-box {
   margin: 20px auto;
   width: 120px;
@@ -278,7 +293,7 @@
 <div class="chest-container">
   <p>剩餘普通寶箱數量：<span id="normal-chest-count">0</span> 顆</p>
   <h2 style="color:lightblue;">普通寶箱</h2>
-  <button id="buy-chest-btn">開啟普通寶箱</button>
+  <button id="buy-normal-chest-btn">開啟普通寶箱</button>
 
   <div id="normal-chest-box" class="chest-box">
     <div class="chest-lid"></div>
