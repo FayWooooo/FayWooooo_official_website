@@ -258,11 +258,14 @@
         <option value="add">增加 Fay幣</option>
         <option value="subtract">減少 Fay幣</option>
         <option value="reset">歸零</option>
+        <option value="giftNormal">贈送普通寶箱</option>
+        <option value="giftAdvanced">贈送高級寶箱</option>
       </select>
 
       <input type="number" id="coin-amount-input" class="admin-input" placeholder="輸入數量" />
       <button onclick="applyAdminAction()" class="admin-button">執行</button>
     </div>
+
     <div class="admin-info">⚠️ 此功能僅限官方帳號使用</div>
   </div>
 
@@ -275,7 +278,7 @@
 <div class="chest-container">
   <p>剩餘普通寶箱數量：<span id="normal-chest-count">0</span> 顆</p>
   <h2 style="color:lightblue;">普通寶箱</h2>
-  <button id="buy-normal-chest-btn">開啟普通寶箱</button>
+  <button id="buy-chest-btn">開啟普通寶箱</button>
 
   <div id="normal-chest-box" class="chest-box">
     <div class="chest-lid"></div>
@@ -507,71 +510,83 @@
     }
 
     // 🔹 修正：優化管理員操作提示訊息
-    async function applyAdminAction() {
-      let email = document.getElementById('user-email-input').value.trim();
+async function applyAdminAction() {
+  let email = document.getElementById('user-email-input').value.trim();
+  if (!email) {
+    alert('請輸入帳號 Email');
+    return;
+  }
 
-      if (!email) {
-        alert('請輸入帳號 Email');
-        return;
-      }
+  email = email.toLowerCase();
+  const action = document.getElementById('action-select').value;
+  const amount = parseInt(document.getElementById('coin-amount-input').value) || 0;
 
-      email = email.toLowerCase();
-      const action = document.getElementById('action-select').value;
-      const amount = parseInt(document.getElementById('coin-amount-input').value) || 0;
+  if ((action === 'add' || action === 'subtract') && amount <= 0) {
+    alert('請輸入有效數字');
+    return;
+  }
 
-      if ((action === 'add' || action === 'subtract') && amount <= 0) {
-        alert('請輸入有效數字');
-        return;
-      }
+  try {
+    const snapshot = await db.collection('userLoginRewards')
+                             .where('userEmail', '==', email)
+                             .get();
 
-      try {
-        console.log("🔍 正在查詢帳號：", email);
-
-        const userRef = db.collection('userLoginRewards')
-                          .where('userEmail', '==', email);
-        const snapshot = await userRef.get();
-
-        if (snapshot.empty) {
-          console.warn("❌ 查無資料，列出所有帳號供檢查：");
-          const allUsers = await db.collection('userLoginRewards').get();
-          allUsers.forEach(doc => console.log("📌", doc.data().userEmail));
-          alert('找不到該帳號，請確認 Email 是否正確');
-          return;
-        }
-
-        snapshot.forEach(async (doc) => {
-          let balance = doc.data().coins || 0;
-
-          if (action === 'add') {
-            balance += amount;
-          } else if (action === 'subtract') {
-            balance = Math.max(0, balance - amount);
-          } else if (action === 'reset') {
-            balance = 0;
-          }
-
-          await db.collection('userLoginRewards').doc(doc.id).update({ coins: balance });
-          
-          // 🔹 優化提示訊息：只顯示最終餘額
-          alert(`✅ ${email} 的 Fay幣餘額已調整為：${balance}`);
-          
-          // 如果是目前登入者，同步更新畫面
-          if (email === localStorage.getItem('userEmail')) {
-            document.getElementById('coin-balance').textContent = balance;
-            localStorage.setItem(`fayCoins_${email}`, balance);
-            localStorage.setItem('fayCoinBalance', balance.toString());
-          }
-
-          uploadRecord(email, balance, `【官方操作-${action}】`);
-          
-          // 清空輸入框
-          document.getElementById('coin-amount-input').value = '';
-        });
-      } catch (err) {
-        console.error("❌ Firebase 更新失敗", err);
-        alert('操作失敗，請檢查控制台');
-      }
+    if (snapshot.empty) {
+      alert('找不到該帳號，請確認 Email 是否正確');
+      return;
     }
+
+    snapshot.forEach(async (doc) => {
+      let data = doc.data();
+      let balance = data.coins || 0;
+      let normalChests = data.normalChests || 0;
+      let advancedChests = data.chests || 0;
+
+      if (action === 'add') {
+        balance += amount;
+        await db.collection('userLoginRewards').doc(doc.id).update({ coins: balance });
+        alert(`✅ ${email} 的 Fay幣餘額已調整為：${balance}`);
+      } 
+      else if (action === 'subtract') {
+        balance = Math.max(0, balance - amount);
+        await db.collection('userLoginRewards').doc(doc.id).update({ coins: balance });
+        alert(`✅ ${email} 的 Fay幣餘額已調整為：${balance}`);
+      } 
+      else if (action === 'reset') {
+        balance = 0;
+        await db.collection('userLoginRewards').doc(doc.id).update({ coins: balance });
+        alert(`✅ ${email} 的 Fay幣餘額已重置為 0`);
+      }
+else if (action === 'giftNormal') {
+  normalChests += amount;
+  await db.collection('userLoginRewards').doc(doc.id).update({ normalChests });
+  alert(`🎁 已贈送 ${amount} 顆普通寶箱給 ${email}`);
+
+  // 🔹 觸發事件，通知其他頁面
+  window.dispatchEvent(new CustomEvent('normalChestChanged', {
+    detail: { email: email, count: normalChests }
+  }));
+}
+else if (action === 'giftAdvanced') {
+  advancedChests += amount;
+  await db.collection('userLoginRewards').doc(doc.id).update({ chests: advancedChests });
+  alert(`🎁 已贈送 ${amount} 顆高級寶箱給 ${email}`);
+
+  // 🔹 觸發事件，通知其他頁面
+  window.dispatchEvent(new CustomEvent('advancedChestChanged', {
+    detail: { email: email, count: advancedChests }
+  }));
+}
+
+    });
+
+    document.getElementById('coin-amount-input').value = '';
+  } catch (err) {
+    console.error("❌ Firebase 更新失敗", err);
+    alert('操作失敗，請檢查控制台');
+  }
+}
+
 
     // 載入所有使用者帳號供管理員選擇
     async function loadAllUsersFromFirebase() {
@@ -812,7 +827,6 @@ async function updateChestDisplay() {
   document.getElementById("chest-count").innerText = chests;
 }
 
-// === 開啟寶箱（一次只開一顆） ===
 // === 開啟寶箱（一次只開一顆） ===
 async function openChest() {
   let chests = await loadChests();
@@ -1056,6 +1070,21 @@ async function buyNormalChestBundle(cost, amount) {
 // 頁面載入時更新顯示
 window.addEventListener("load", async () => {
   await updateNormalChestDisplay();
+});
+// 🔹 玩家端即時更新普通寶箱數量
+window.addEventListener('normalChestChanged', async (event) => {
+  const email = localStorage.getItem('userEmail');
+  if (email && event.detail.email === email) {
+    document.getElementById("normal-chest-count").innerText = event.detail.count;
+  }
+});
+
+// 🔹 玩家端即時更新高級寶箱數量
+window.addEventListener('advancedChestChanged', async (event) => {
+  const email = localStorage.getItem('userEmail');
+  if (email && event.detail.email === email) {
+    document.getElementById("chest-count").innerText = event.detail.count;
+  }
 });
 
 </script>
