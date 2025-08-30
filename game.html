@@ -296,17 +296,36 @@
     else draw();
   }
 
-  // === 開始遊戲 ===
-  document.getElementById("startBtn").onclick=()=>{
-    if(playCount>=5){ alert("今天已達 5 場上限"); return; }
-    playCount++; localStorage.setItem(todayKey,playCount);
-    document.getElementById("startBtn").style.display="none";
-    document.getElementById("guide").style.display="none";
-    canvas.style.display="block";
+// === 開始遊戲 ===
+document.getElementById("startBtn").onclick=()=>{
+  if(playCount>=5){ 
+    alert("今天已達 5 場上限"); 
+    return; 
+  }
+  playCount++; 
+  localStorage.setItem(todayKey,playCount);
+  document.getElementById("startBtn").style.display="none";
+  document.getElementById("guide").style.display="none";
+  canvas.style.display="block";
+
+  // ✅ 判斷是否為觸控裝置 (手機/平板)
+  const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+  if(isTouchDevice){
     document.getElementById("joystick").style.display="block";
     document.getElementById("buttons").style.display="block";
-    loadBalance().then(()=>gameLoop());
+  } else {
+    // 電腦 → 確保隱藏
+    document.getElementById("joystick").style.display="none";
+    document.getElementById("buttons").style.display="none";
   }
+
+  loadBalance().then(()=>gameLoop());
+}
+alert(isTouchDevice ? "📱 手機/平板模式" : "💻 電腦模式");
+
+
   </script>
 </body>
 </html>
+
