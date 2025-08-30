@@ -2,224 +2,48 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>打怪遊戲 - FayWooooo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系統維護中</title>
   <style>
-    body { background:#111; color:white; text-align:center; font-family:sans-serif; }
-    canvas { background:#222; display:block; margin:20px auto; border:2px solid gold; }
-    #info { margin-top:10px; font-size:18px; }
-    #startBtn { padding:10px 20px; font-size:20px; cursor:pointer; }
-    #endScreen {
-      display:none; position:absolute; top:0; left:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.8); color:white; font-size:40px;
-      justify-content:center; align-items:center; flex-direction:column;
+    body {
+      margin: 0;
+      font-family: "Microsoft JhengHei", sans-serif;
+      background-color: #1e1e1e;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      text-align: center;
     }
-    #guide { margin-top:20px; font-size:16px; color:#ccc; }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      color: #ff4c4c;
+    }
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+    }
+    button {
+      padding: 12px 30px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: #ff4c4c;
+      color: white;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #e03a3a;
+    }
   </style>
 </head>
 <body>
-  <h1 style="color:gold;">打怪遊戲</h1>
-  <div id="info">
-    血量：<span id="hp">100</span> | Fay幣：<span id="coins">0</span> | 子彈：<span id="ammo">3</span>/3 | 大招能量：<span id="ult">0</span>/6
-  </div>
-  <button id="startBtn">開始遊戲</button>
-  <div id="guide">
-    操作方式：WASD移動｜空白鍵射擊｜B鍵大招<br>
-    規則：擊敗敵人即可獲勝，每日最多5場
-  </div>
-  <canvas id="gameCanvas" width="600" height="400" style="display:none;"></canvas>
-  <div id="endScreen"><div id="resultText"></div></div>
-  <a href="index.html"><button style="background-color: white;width: 100px;height: 50px;border-radius: 10px;cursor: pointer;">回首頁</button></a>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script>
-  // 登入檢查
-  if (localStorage.getItem('isLoggedIn') !== 'true') {
-    alert('⚠️ 請先登入才能遊玩');
-    window.location.href='index.html';
-  }
-
-  // === 一天最多 5 場 ===
-  const todayKey = "playCount_" + new Date().toISOString().slice(0,10);
-  let playCount = parseInt(localStorage.getItem(todayKey) || "0");
-  if(playCount>=5){
-    document.getElementById("startBtn").disabled=true;
-    document.getElementById("startBtn").innerText="今天已達 5 場上限";
-  }
-
-  // Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyAw3NxfRft4pke6TUl9gQ4a8P0LEm30zWo",
-    authDomain: "faycoin-bb878.firebaseapp.com",
-    projectId: "faycoin-bb878"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const email = localStorage.getItem("userEmail") || "";
-  let coins=0;
-
-  async function loadBalance(){
-    if(!email) return 0;
-    const snap = await db.collection("userLoginRewards").where("userEmail","==",email).get();
-    if(!snap.empty) coins=snap.docs[0].data().coins||0;
-    document.getElementById("coins").textContent=coins;
-    return coins;
-  }
-  async function saveBalance(value){
-    if(!email) return;
-    const snap = await db.collection("userLoginRewards").where("userEmail","==",email).get();
-    if(!snap.empty) await db.collection("userLoginRewards").doc(snap.docs[0].id).update({ coins:value });
-    coins=value;
-    document.getElementById("coins").textContent=coins;
-  }
-
-  // === 遊戲物件 ===
-  const canvas=document.getElementById("gameCanvas"), ctx=canvas.getContext("2d");
-  const imgPlayer=new Image(); imgPlayer.src="img/player.png";
-  const imgEnemy=new Image(); imgEnemy.src="img/enemy.png";
-  const imgBullet=new Image(); imgBullet.src="img/bullet.png";
-
-  let player={x:300,y:200,hp:100,maxHp:100,lastShot:0};
-  let enemy={x:100,y:100,hp:120,maxHp:120,lastAttack:0};
-  let bullets=[], enemyBullets=[], explosions=[];
-  let ammo=3, maxAmmo=3, reloadTime=600;
-  let hitCount=0; // 蓄大招計數
-  let gameOver=false;
-
-  // 子彈回復
-  setInterval(()=>{ if(ammo<maxAmmo){ ammo++; updateUI(); } }, reloadTime);
-
-  function updateUI(){
-    document.getElementById("ammo").textContent=ammo;
-    document.getElementById("hp").textContent=Math.max(0,player.hp.toFixed(0));
-    document.getElementById("ult").textContent=hitCount;
-  }
-
-  let keys={};
-  document.addEventListener("keydown",e=>keys[e.key]=true);
-  document.addEventListener("keyup",e=>keys[e.key]=false);
-
-  function moveTo(obj,target,speed){
-    let dx=target.x-obj.x, dy=target.y-obj.y, d=Math.hypot(dx,dy);
-    if(d>0){ obj.x+=dx/d*speed; obj.y+=dy/d*speed; }
-  }
-  function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
-
-  function drawHpBar(obj){
-    let barW=40,barH=5,hpRatio=obj.hp/obj.maxHp;
-    ctx.fillStyle="red"; ctx.fillRect(obj.x-20,obj.y-30,barW,barH);
-    ctx.fillStyle="lime"; ctx.fillRect(obj.x-20,obj.y-30,barW*hpRatio,barH);
-  }
-
-  function update(){
-    let now=Date.now();
-
-    // 玩家移動
-    if(keys["w"]) player.y-=1;
-    if(keys["s"]) player.y+=1;
-    if(keys["a"]) player.x-=1;
-    if(keys["d"]) player.x+=1;
-
-    // 玩家射擊
-    if(keys[" "] && ammo>0 && now-player.lastShot>250){
-      let dx=(enemy.x-player.x), dy=(enemy.y-player.y), d=Math.hypot(dx,dy);
-      bullets.push({x:player.x,y:player.y,dx:dx/d,dy:dy/d,track:false});
-      ammo--; player.lastShot=now; updateUI();
-    }
-
-    // 玩家大招 (B鍵)
-    if(keys["b"] && hitCount>=6){
-      hitCount=0; updateUI();
-      for(let i=0;i<6;i++){
-        setTimeout(()=>{
-          let dx=(enemy.x-player.x), dy=(enemy.y-player.y)+(i-3)*20, d=Math.hypot(dx,dy);
-          bullets.push({x:player.x,y:player.y,dx:dx/d,dy:dy/d,track:false});
-        }, i*50);
-      }
-    }
-
-    // 玩家子彈移動
-    bullets.forEach(b=>{
-      b.x+=b.dx*7; b.y+=b.dy*7;
-      if(dist(b,enemy)<20){ enemy.hp-=5; b.dead=true; hitCount=Math.min(6,hitCount+1); updateUI();}
-    });
-    bullets=bullets.filter(b=>!b.dead);
-
-    // 敵人 AI：靠近 + 子彈攻擊
-    moveTo(enemy,player,1);
-    if(now-enemy.lastAttack>1500){
-      let dx=(player.x-enemy.x), dy=(player.y-enemy.y), d=Math.hypot(dx,dy);
-      enemyBullets.push({x:enemy.x,y:enemy.y,dx:dx/d,dy:dy/d});
-      enemy.lastAttack=now;
-    }
-    enemyBullets.forEach(b=>{
-      b.x+=b.dx*5; b.y+=b.dy*5;
-      if(dist(b,player)<20){ player.hp-=2; b.dead=true; }
-    });
-    enemyBullets=enemyBullets.filter(b=>!b.dead);
-
-    // 敵人不定點爆炸（延遲1.5秒）
-    if(Math.random()<0.003){ // 平均5~10秒出現一次
-      explosions.push({x:Math.random()*600,y:Math.random()*400,time:now,armed:false});
-    }
-    explosions.forEach(ex=>{
-      if(!ex.armed && now-ex.time>1500){ ex.armed=true; }
-      if(ex.armed && now-ex.time<2500){ // 爆炸持續1秒
-        if(dist(player,ex)<40) player.hp-=0.5;
-      }
-    });
-    explosions=explosions.filter(ex=>now-ex.time<2500);
-
-    // 勝負判定
-    if(enemy.hp<=0){ win(); return false; }
-    if(player.hp<=0){ lose(); return false; }
-    return true;
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    // 玩家
-    ctx.drawImage(imgPlayer,player.x-16,player.y-16,32,32);
-    drawHpBar(player); ctx.fillStyle="white"; ctx.fillText("玩家",player.x-15,player.y-40);
-    // 敵人
-    ctx.drawImage(imgEnemy,enemy.x-16,enemy.y-16,32,32);
-    drawHpBar(enemy); ctx.fillStyle="red"; ctx.fillText("敵人",enemy.x-15,enemy.y-40);
-    // 子彈
-    bullets.forEach(b=>ctx.drawImage(imgBullet,b.x-4,b.y-4,8,8));
-    enemyBullets.forEach(b=>ctx.fillRect(b.x-2,b.y-2,6,6));
-    // 爆炸
-    explosions.forEach(ex=>{
-      ctx.beginPath(); ctx.arc(ex.x,ex.y,40,0,Math.PI*2);
-      ctx.fillStyle= ex.armed ? "rgba(255,0,0,0.5)" : "rgba(255,255,0,0.3)";
-      ctx.fill();
-    });
-  }
-
-  async function win(){
-    gameOver=true;
-    document.getElementById("endScreen").style.display="flex";
-    document.getElementById("resultText").textContent="🎉 勝利！";
-    await saveBalance(coins+50);
-  }
-  function lose(){
-    gameOver=true;
-    document.getElementById("endScreen").style.display="flex";
-    document.getElementById("resultText").textContent="💀 失敗！";
-  }
-
-  async function gameLoop(){
-    if(update()){ draw(); if(!gameOver) requestAnimationFrame(gameLoop); }
-    else draw();
-  }
-
-  // === 開始遊戲 ===
-  document.getElementById("startBtn").onclick=()=>{
-    if(playCount>=5){ alert("今天已達 5 場上限"); return; }
-    playCount++; localStorage.setItem(todayKey,playCount);
-    document.getElementById("startBtn").style.display="none";
-    document.getElementById("guide").style.display="none";
-    canvas.style.display="block";
-    loadBalance().then(()=>gameLoop());
-  }
-  </script>
+  <h1>⚠ 系統維護中 ⚠</h1>
+  <p>目前系統正在維護，請勿查看其他頁面。</p>
+  <button onclick="location.href='index.html'">返回首頁</button>
 </body>
 </html>
