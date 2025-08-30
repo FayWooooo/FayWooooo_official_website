@@ -19,7 +19,11 @@ const urlsToCache = [
   "/bg.png",
   "/icon-192.png",
   "/icon-512.png",
+  "/img/bullet.png",
+  "/img/enemy.png",
+  "/img/player.png",
   "/download.html",
+  "/game.html",
   "/faycoin-sync.js" // 你網站的 JS
 ];
 
