@@ -3,11 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>打怪遊戲 - FayWooooo</title>
+  <link rel="icon" href="logo.ico" type="image/x-icon">
 <style>
+    @font-face {
+    font-family: 'hanwangheiheavy';
+    src: url('https://www.moedict.tw/fonts/truetype/wang/wt014.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
   body {
     background:#111;
     color:white;
-    font-family:sans-serif;
+    font-family:"hanwangheiheavy";
     margin:0;
     overflow:hidden;
     display:flex;
@@ -292,7 +299,7 @@
     gameOver=true;
     document.getElementById("endScreen").style.display="flex";
     document.getElementById("resultText").textContent="🎉 勝利！";
-    await saveBalance(coins+50);
+    await saveBalance(coins+10);
   }
   function lose(){
     gameOver=true;
