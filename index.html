@@ -938,7 +938,8 @@
             </a>
               <a href="leaderboard.html" class="dropdown-item">Fay幣排行榜</a> <!-- 🆕 新增 -->
   <a href="courses.html" class="dropdown-item">課程</a> <!-- 🆕 新增 -->
-            <a class="dropdown-item" href="earn.html">任務</a>
+  <a class="dropdown-item" href="earn.html">任務</a>
+  <a class="dropdown-item" href="earn-map.html">任務地圖</a>
             <a class="dropdown-item" href="game.html">打怪遊戲</a>
             <a class="dropdown-item" href="setting.html">設定</a>
             <a class="dropdown-item" href="#" id="logout-link">登出</a>
@@ -1373,6 +1374,7 @@ async function showUserMenu(email) {
             <a href="leaderboard.html" class="dropdown-item">Fay幣排行榜</a> <!-- 🆕 新增 -->
   <a href="courses.html" class="dropdown-item">課程</a> <!-- 🆕 新增 -->
           <a class="dropdown-item" href="earn.html">任務</a>
+          <a class="dropdown-item" href="earn-map.html">任務地圖</a>
           <a class="dropdown-item" href="game.html">打怪遊戲</a>
           <a class="dropdown-item" href="setting.html">設定</a>
           <a class="dropdown-item" href="#" id="logout-link">登出</a>
@@ -1439,12 +1441,5 @@ if (lastReload) {
   location.reload();
 }
 </script>
-const reloadKey = `forceReload:${location.pathname.split('/').pop()}`;
-const reloadValue = localStorage.getItem(reloadKey);
-if (reloadValue) {
-  localStorage.removeItem(reloadKey);
-  location.reload();
-}
-
 </body>
 </html>
