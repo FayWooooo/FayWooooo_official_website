@@ -958,5 +958,3 @@ async function grantCoins(amount) {
   // ⚡ 用 FayCoinManager 加幣
   window.fayCoinManager.addCoins(amount);
 }
-
-window.fayCoinManager.addCoins(10)
