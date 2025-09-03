@@ -224,10 +224,12 @@ const ADMIN_EMAILS = ['faywooooo@gmail.com']; // 可以添加多個管理員
 const isAdmin = ADMIN_EMAILS.includes(userEmail);
 
 // 顯示管理面板
-if (isAdmin) {
-  document.getElementById('taskAdminPanel').style.display = 'block';
+const panel = document.getElementById('taskAdminPanel');
+if (isAdmin && panel) {
+  panel.style.display = 'block';
   console.log('🎯 任務管理面板已啟用');
 }
+
 
 // 任務系統 - 修改為支援無限制進度條
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1xOoP5iG4AJBKVTH1EFt0zzCcGnJP5PaJ1lWGhUwWOLA/gviz/tq?tqx=out:csv&sheet=工作表2';
