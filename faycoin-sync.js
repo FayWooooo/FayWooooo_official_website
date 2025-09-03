@@ -186,7 +186,6 @@ function showCoinGainedToast(amount) {
 const ADMINEMAILS = ['faywooooo@gmail.com'];
 const currentUser = localStorage.getItem('userEmail') || '';
 if (ADMINEMAILS.includes(currentUser)) {
-  document.getElementById('taskAdminPanel').style.display = 'block';
 } else {
   document.getElementById('taskAdminPanel').remove(); // 一般用戶完全移除
 }
@@ -950,5 +949,24 @@ function setupAdminFeatures() {
   console.log('🎯 管理功能已初始化');
 }
 
+async function grantCoins(amount) {
+  const email = localStorage.getItem("userEmail");
+  const snapshot = await db.collection("userLoginRewards").where("userEmail", "==", email).get();
+
+  let expiry = 0;
+  let multiplier = 1;
+  if (!snapshot.empty) {
+    expiry = snapshot.docs[0].data().multiplierExpiry || 0;
+    multiplier = snapshot.docs[0].data().coinMultiplier || 1;
+  }
+
+  let now = Date.now();
+  if (expiry > now) {
+    amount *= multiplier; // 套用倍率
+  }
+
+  // ⚡ 用 FayCoinManager 加幣
+  window.fayCoinManager.addCoins(amount);
+}
 
 window.fayCoinManager.addCoins(10)
