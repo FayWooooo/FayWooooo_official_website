@@ -460,18 +460,33 @@ async function fetchTasks() {
     if (!res.ok) throw new Error('無法載入任務資料');
     const csv = await res.text();
     tasks = parseCSV(csv);
+
+    const carousel = document.getElementById('carousel');
+
     if (tasks.length === 0) {
-      document.getElementById('carousel').innerHTML = '<div style="color:#ccc; font-size:20px; padding:50px;">目前沒有任務資料</div>';
+      if (carousel) {
+        carousel.innerHTML = '<div style="color:#ccc; font-size:20px; padding:50px;">目前沒有任務資料</div>';
+      }
     } else {
       // 先初始化用戶任務進度記錄
       await initializeUserTaskProgress();
       // 再渲染任務
-      await renderTasks(tasks, 'carousel', updateCarousel);
+      if (carousel) {
+        await renderTasks(tasks, 'carousel', updateCarousel);
+      }
     }
   } catch (err) {
     console.error(err);
-    document.getElementById('carousel').innerHTML = '<div style="color:red; font-size:20px; padding:50px;">載入任務失敗</div>';
+    const carousel = document.getElementById('carousel');
+    if (carousel) {
+      carousel.innerHTML = '<div style="color:red; font-size:20px; padding:50px;">載入任務失敗</div>';
+    }
   }
+}
+
+function stripHTML(input) {
+  const doc = new DOMParser().parseFromString(input, 'text/html');
+  return doc.body.textContent || "";
 }
 
 function parseCSV(text) {
@@ -625,17 +640,22 @@ window.onload = () => {
 // ====== 任務管理面板功能 ======
 
 // 載入任務到下拉選單
-function loadTasksToSelect() {
+function loadTasksToSelect(tasks) {
   const taskSelect = document.getElementById('select-task');
+  if (!taskSelect) {
+    console.warn("⚠️ 找不到 #select-task，下拉選單不會被載入");
+    return;
+  }
+
   taskSelect.innerHTML = '<option value="">選擇任務...</option>';
-  
-  tasks.forEach(task => {
+  tasks.forEach((task, index) => {
     const option = document.createElement('option');
-    option.value = task.taskName;
-    option.textContent = `${task.taskName} (${task.points})`;
+    option.value = index;
+    option.textContent = `${task.taskName} - 獎勵: ${task.reward}`;
     taskSelect.appendChild(option);
   });
 }
+
 
 // 搜尋用戶功能
 async function searchUsers() {
@@ -938,10 +958,24 @@ function setupAdminFeatures() {
   
   console.log('🎯 管理功能已初始化');
 }
-
+import { collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 async function grantCoins(amount) {
   const email = localStorage.getItem("userEmail");
-  const snapshot = await db.collection("userLoginRewards").where("userEmail", "==", email).get();
+
+// 查詢
+const q = query(
+  collection(db, "userLoginRewards"),
+  where("userEmail", "==", email)
+);
+const snapshot = await getDocs(q);
+
+// 更新
+if (!snapshot.empty) {
+  await updateDoc(doc(db, "userLoginRewards", snapshot.docs[0].id), {
+    coins: value
+  });
+}
+
 
   let expiry = 0;
   let multiplier = 1;
@@ -958,3 +992,4 @@ async function grantCoins(amount) {
   // ⚡ 用 FayCoinManager 加幣
   window.fayCoinManager.addCoins(amount);
 }
+
