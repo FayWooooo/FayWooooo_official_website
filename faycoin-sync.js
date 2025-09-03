@@ -610,18 +610,6 @@ function updateCarousel(taskCount = tasks.length) {
   carousel.style.transform = `translateX(-${currentPage * cardsPerPage * cardWidth}px)`;
 }
 
-document.getElementById('prev-btn').onclick = () => {
-  const totalPages = Math.ceil(tasks.length / cardsPerPage);
-  currentPage = (currentPage - 1 + totalPages) % totalPages;
-  updateCarousel();
-};
-
-document.getElementById('next-btn').onclick = () => {
-  const totalPages = Math.ceil(tasks.length / cardsPerPage);
-  currentPage = (currentPage + 1) % totalPages;
-  updateCarousel();
-};
-
 // 窗口大小改變時重新計算輪播
 window.addEventListener('resize', () => {
   updateCarousel();
