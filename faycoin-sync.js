@@ -651,7 +651,7 @@ function loadTasksToSelect(tasks) {
   tasks.forEach((task, index) => {
     const option = document.createElement('option');
     option.value = index;
-    option.textContent = `${task.taskName} - 獎勵: ${task.reward}`;
+    option.textContent = `${task.taskName} - 獎勵: ${task.points}`;
     taskSelect.appendChild(option);
   });
 }
@@ -971,9 +971,10 @@ const snapshot = await getDocs(q);
 
 // 更新
 if (!snapshot.empty) {
-  await updateDoc(doc(db, "userLoginRewards", snapshot.docs[0].id), {
-    coins: value
-  });
+  const docRef = doc(db, "userLoginRewards", snapshot.docs[0].id);
+    const userData = snapshot.docs[0].data();
+    const currentCoins = userData.coins || 0;
+    await updateDoc(docRef, { coins: currentCoins + amount });
 }
 
 
