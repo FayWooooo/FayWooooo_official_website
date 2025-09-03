@@ -260,7 +260,7 @@
       window.location.href = 'index.html';
     }
   </script>
-  
+  <div id="coin-panel" style="display:none;"></div>
   <h1 style="font-size: 55px;font-weight:normal;color:white;">Fay幣兌換區</h1>
   
   <div id="admin-panel" class="admin-panel">
@@ -274,8 +274,11 @@
         <option value="subtract">減少 Fay幣</option>
         <option value="reset">歸零</option>
         <option value="giftNormal">贈送普通寶箱</option>
+        <option value="removeNormal">刪除普通寶箱</option> <!-- 新增 -->
         <option value="giftAdvanced">贈送高級寶箱</option>
+        <option value="removeAdvanced">刪除高級寶箱</option> <!-- 新增 -->
       </select>
+      
 
       <input type="number" id="coin-amount-input" class="admin-input" placeholder="輸入數量" />
       <button onclick="applyAdminAction()" class="admin-button">執行</button>
@@ -491,15 +494,23 @@
       let balance = await loadBalance();
       const item = itemsData.find(it => it.price === price)?.name || '未知商品';
 
+
       if (balance >= price) {
-        balance -= price;
-        await saveBalance(balance);
-        document.getElementById('coin-balance').textContent = balance;
-        alert(`✅ 兌換成功！剩餘 Fay幣：${balance}`);
-        uploadRecord(getUserId(), balance, item);
-      } else {
+  balance -= price;
+  await saveBalance(balance);
+  document.getElementById('coin-balance').textContent = balance;
+  alert(`✅ 兌換成功！剩餘 Fay幣：${balance}`);
+  uploadRecord(getUserId(), balance, item);
+
+  // 🔹 寄送 Email
+  const email = localStorage.getItem("userEmail");
+  if (email && email !== "faywooooo@gmail.com") {
+    sendRewardEmail(email, `成功兌換了商品：${item}`, "template_o2q9pt8");
+  }
+}else {
         alert('❌ Fay幣不足，無法兌換！');
       }
+
     }
 
     function getUserId() {
@@ -592,6 +603,26 @@ else if (action === 'giftAdvanced') {
     detail: { email: email, count: advancedChests }
   }));
 }
+else if (action === 'removeNormal') {
+  normalChests = Math.max(0, normalChests - amount);
+  await db.collection('userLoginRewards').doc(doc.id).update({ normalChests });
+  alert(`🗑️ 已刪除 ${amount} 顆普通寶箱 from ${email}`);
+
+  // 即時更新
+  window.dispatchEvent(new CustomEvent('normalChestChanged', {
+    detail: { email: email, count: normalChests }
+  }));
+}
+else if (action === 'removeAdvanced') {
+  advancedChests = Math.max(0, advancedChests - amount);
+  await db.collection('userLoginRewards').doc(doc.id).update({ chests: advancedChests });
+  alert(`🗑️ 已刪除 ${amount} 顆高級寶箱 from ${email}`);
+
+  // 即時更新
+  window.dispatchEvent(new CustomEvent('advancedChestChanged', {
+    detail: { email: email, count: advancedChests }
+  }));
+}
 
     });
 
@@ -600,6 +631,7 @@ else if (action === 'giftAdvanced') {
     console.error("❌ Firebase 更新失敗", err);
     alert('操作失敗，請檢查控制台');
   }
+  
 }
 
 
@@ -764,16 +796,8 @@ window.addEventListener("load", () => {
       const newBalance = event.detail.newBalance;
       document.getElementById('coin-balance').textContent = newBalance;
     });
-    // 在購買按鈕的點擊事件中
-if (handlePurchase('商品名稱', 50)) {
-  // 購買成功的處理
-}
-// 現在仍然可以這樣用，會自動同步
-addFayCoins(15);
   </script>
-  <script type="module">
-  import './faycoin-sync.js';
-</script>
+<script type="module" src="faycoin-sync.js"></script>
 
 
 <script>
@@ -876,7 +900,8 @@ async function openChest() {
 
       const email = localStorage.getItem("userEmail");
       if (email && email !== "faywooooo@gmail.com") {
-        sendRewardEmail(email, reward.name);
+        sendRewardEmail(email, `高級寶箱獲得：${reward.name}`, "template_chest123");
+
       }
     }
 
@@ -960,20 +985,23 @@ function showRewardAnnouncement(userEmail, reward) {
     setTimeout(()=>toast.remove(),500);
   },5000);
 }
-function sendRewardEmail(userEmail, rewardName) {
+function sendRewardEmail(userEmail, rewardName, templateId) {
   const templateParams = {
     user: userEmail || "未知玩家",
     reward: rewardName,
     time: new Date().toLocaleString()
   };
 
-  emailjs.send("service_g83kh8j", "template_7r9kdt9", templateParams)
+  emailjs.send("service_g83kh8j", templateId, templateParams)
     .then(function(response) {
       console.log("✅ Email 發送成功:", response.status, response.text);
     }, function(error) {
       console.error("❌ Email 發送失敗:", error);
     });
 }
+
+
+
 // === 普通寶箱獎勵池 ===
 const normalChestRewards = [
   { name: "YT影片片尾放你的名字感謝", type: "item", chance: 40 },
@@ -1051,7 +1079,8 @@ async function openNormalChest() {
       msg = `🎉 恭喜獲得 ${reward.name}！`;
       const email = localStorage.getItem("userEmail");
       if (email && email !== "faywooooo@gmail.com") {
-        sendRewardEmail(email, reward.name);
+        sendRewardEmail(email, `普通寶箱獲得：${reward.name}`, "template_chest123");
+
       }
     }
 
