@@ -1204,7 +1204,7 @@ async function openChest() {
 
       const email = localStorage.getItem("userEmail");
       if (email && email !== "faywooooo@gmail.com") {
-        sendRewardEmail(email, `高級寶箱獲得：${reward.name}`, "template_chest123");
+        sendRewardEmail(email, reward.name, "template_7r9kdt9", "高級寶箱");
 
       }
     }
@@ -1289,22 +1289,19 @@ function showRewardAnnouncement(userEmail, reward) {
     setTimeout(()=>toast.remove(),500);
   },5000);
 }
-function sendRewardEmail(userEmail, rewardName, templateId) {
-const templateParams = {
-  user: userEmail || "未知玩家",
-  reward: rewardName,
-  time: new Date().toLocaleString(),
-  message: "來自抓娃娃機" // 如果模板裡有 {{message}}
-};
+function sendRewardEmail(userEmail, rewardName, templateId, sourceType) {
+  const templateParams = {
+    user: userEmail || "未知玩家",
+    reward: rewardName,
+    type: sourceType || "系統獎勵",   // 新增來源資訊
+    time: new Date().toLocaleString()
+  };
 
   emailjs.send("service_g83kh8j", templateId, templateParams)
-    .then(function(response) {
-      console.log("✅ Email 發送成功:", response.status, response.text);
-    }, function(error) {
-      console.error("❌ Email 發送失敗:", error);
-      alert("❌ Email 發送失敗，請檢查 Console");
-    });
+    .then(res => console.log("✅ Email 發送成功:", res))
+    .catch(err => console.error("❌ Email 發送失敗:", err));
 }
+
 
 
 
@@ -1387,7 +1384,7 @@ async function openNormalChest() {
       msg = `🎉 恭喜獲得 ${reward.name}！`;
       const email = localStorage.getItem("userEmail");
       if (email && email !== "faywooooo@gmail.com") {
-        sendRewardEmail(email, `普通寶箱獲得：${reward.name}`, "template_chest123");
+        sendRewardEmail(email, reward.name, "template_7r9kdt9", "普通寶箱");
 
       }
     }
@@ -1524,7 +1521,7 @@ async function playClawMachine() {
     clawArm.style.left = "50%";
 
     if (target) {
-if (Math.random() < 0.20) {
+if (Math.random() < 0.95) {
   // 掉回去 → 播放往後甩動畫
   target.classList.add("fall-back");
 
@@ -1557,7 +1554,7 @@ if (Math.random() < 0.20) {
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
           });
 
-          sendRewardEmail(email, `抓娃娃機獲得：${won}`, "template_chest123");
+          sendRewardEmail(email, won, "template_7r9kdt9", "抓娃娃機");
        }, 1000);
       }
     }
@@ -1690,7 +1687,7 @@ function listenClawProgress() {
       }
     });
 }
-if (Math.random() < 0.20) {
+if (Math.random() < 0.95) {
   // 失敗 → 獎品掉回 prizeBed
 } else {
   // 成功 → 放到洞口
