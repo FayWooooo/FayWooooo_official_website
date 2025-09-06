@@ -250,6 +250,269 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+/* ===== Claw Machine UI ===== */
+.claw-section {
+  margin-top: 30px;
+  padding: 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+  box-shadow: 0 12px 30px rgba(0,0,0,0.55), inset 0 0 1px rgba(255,255,255,0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.claw-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.claw-title {
+  font-size: 28px;
+  color: #ffd166;
+  letter-spacing: 1px;
+  text-shadow: 0 4px 14px rgba(255,209,102,0.35);
+}
+
+.claw-card {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+@media (max-width: 980px) {
+  .claw-card { grid-template-columns: 1fr; }
+}
+
+/* Cabinet (Machine) */
+.claw-cabinet {
+  background: radial-gradient(120% 130% at 50% 0%, rgba(255,255,255,0.12), rgba(0,0,0,0.2) 70%);
+  border: 2px solid rgba(255,255,255,0.18);
+  border-radius: 18px;
+  position: relative;
+  height: 420px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+
+.cabinet-glow:before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    120deg,
+    rgba(255,215,0,0.2),
+    transparent 35%,
+    rgba(0,170,255,0.18),
+    transparent 70%,
+    rgba(255,0,185,0.18)
+  );
+  filter: blur(10px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.cabinet-glass {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,0.08), transparent 55%),
+              radial-gradient(120% 120% at 80% 0%, rgba(255,255,255,0.06), transparent 60%);
+}
+
+/* Prize bed */
+.prize-bed {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.5));
+  border-top: 1px solid rgba(255,255,255,0.2);
+  overflow: hidden;
+  z-index: 2;
+}
+
+
+.prize {
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 12px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #eaffff;
+  text-align: center;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.prize:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+}
+
+.prize.win {
+  outline: 2px solid #00ffd5;
+  background: linear-gradient(135deg, rgba(0,255,213,0.25), rgba(0,150,255,0.3));
+  box-shadow: 0 0 16px rgba(0,255,213,0.6);
+}
+
+/* Controls */
+/* ===== Claw (更像夾子) ===== */
+.claw-arm {
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 160px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: top 1s ease-in-out, left 1s ease-in-out;
+}
+
+/* 垂直吊線 */
+.claw-body {
+  width: 6px;
+  height: 110px;
+  background: linear-gradient(180deg, #ccc, #555);
+  border-radius: 3px;
+}
+
+/* 爪子中樞 */
+.claw-grabber {
+  position: relative;
+  width: 70px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: radial-gradient(circle at center, #666 20%, #333 80%);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(0,0,0,0.6);
+}
+
+/* 爪子指頭 */
+.claw-finger {
+  width: 14px;
+  height: 45px;
+  background: linear-gradient(180deg, #ddd, #666);
+  border-radius: 8px;
+  margin: 0 6px;
+  transform-origin: top center;
+  position: relative;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.5);
+}
+
+/* 夾合時旋轉 */
+.claw-grab .claw-finger:nth-child(1) { 
+  transform: rotate(35deg) translateY(5px); 
+}
+.claw-grab .claw-finger:nth-child(2) { 
+  transform: rotate(-35deg) translateY(5px); 
+}
+.claw-grab .claw-finger:nth-child(3) { 
+  transform: rotate(0deg) translateY(12px) scaleY(0.9); 
+}
+
+
+/* ===== Prize Ticket (卷) ===== */
+.ticket {
+  background: #ffd166;
+  color: #333;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px dashed #333;
+  transform: rotate(0deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  user-select: none;
+  transition: transform 0.3s ease;
+}
+
+.ticket.roll {
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 8px;
+  border: 2px solid #333;
+  padding: 0;
+  justify-content: center;
+  text-align: center;
+}
+/* ===== 中獎卷動畫 ===== */
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-2px, 0) rotate(-5deg); }
+  40% { transform: translate(2px, 0) rotate(5deg); }
+  60% { transform: translate(-2px, 0) rotate(-5deg); }
+  80% { transform: translate(2px, 0) rotate(5deg); }
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-150px) scale(0.8); opacity: 0; }
+}
+
+.ticket.win {
+  animation: shake 0.4s ease-in-out, floatUp 1s ease-in-out 0.4s forwards;
+  z-index: 5;
+}
+/* 抓娃娃公告 Toast */
+.reward-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(50px);
+  background: rgba(0,0,0,0.8);
+  color: gold;
+  padding: 12px 25px;
+  border-radius: 10px;
+  font-size: 18px;
+  opacity: 0;
+  transition: all 0.5s ease;
+  z-index: 10000;
+}
+.reward-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* 娃娃機出口洞 */
+.prize-hole {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 35px;
+  background: radial-gradient(ellipse at center, #111 60%, #000 100%);
+  border: 2px solid #333;
+  border-radius: 50% / 40%;
+  z-index: 4;
+}
+@keyframes fallBack {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  30%  { transform: translateY(40px) rotate(-20deg); }
+  60%  { transform: translateY(90px) rotate(25deg); }
+  100% { transform: translateY(130px) rotate(0deg); opacity: 1; }
+}
+
+.ticket.fall-back {
+  animation: fallBack 0.8s ease-out forwards;
+  position: absolute !important; /* 確保能自由掉落 */
+}
+
 
   </style>
 </head>
@@ -320,6 +583,46 @@
   <p id="reward-result" style="margin-top:15px;font-size:18px;color:lightgreen;"></p>
     <button onclick="buyChestBundle(500, 1)">購買 1 顆高級寶箱 (500 Fay幣)</button><br>
   <button onclick="buyChestBundle(1000, 2)">購買 3 顆高級寶箱 (1000 Fay幣)</button>
+</div>
+<div class="claw-section">
+  <div class="claw-header">
+    <i class="fa-solid fa-gamepad fa-2x" style="color:#ffd166"></i>
+    <span class="claw-title">Fay幣抓娃娃機</span>
+  </div>
+  <div class="claw-card">
+    <!-- Cabinet -->
+    <div class="claw-cabinet cabinet-glow">
+      <div class="claw-arm" id="clawArm">
+        <div class="claw-body"></div>
+        <div class="claw-grabber" id="clawGrabber">
+          <div class="claw-finger"></div>
+          <div class="claw-finger"></div>
+          <div class="claw-finger"></div>
+        </div>
+      </div>      
+      <div class="cabinet-glass"></div>
+      <div id="prizeBed" class="prize-bed"></div>
+      <div class="prize-hole" id="prizeHole"></div>
+    </div>
+    
+    
+
+    <!-- Control -->
+    <div class="claw-controls">
+      <p style="color:#eee;font-size:15px;margin-bottom:10px;">
+        花費 <b>10 Fay幣</b> 嘗試夾兌換券<br>
+        保夾：1500 Fay幣
+      </p>
+      <button id="playClaw" class="btn-grad">開始夾取</button>
+      <div style="margin-top:18px;">
+        <div id="progressBar" style="height:12px;border-radius:8px;background:#333;overflow:hidden;">
+          <div id="progressFill" style="height:100%;width:0;background:linear-gradient(90deg,#ffd166,#ff6b6b);"></div>
+        </div>
+        <small style="color:#aaa;">距離保夾進度</small>
+      </div>
+      <p id="clawResult" style="margin-top:14px;color:#ffd166;font-weight:bold;"></p>
+    </div>
+  </div>
 </div>
 
   </div>
@@ -988,9 +1291,9 @@ function showRewardAnnouncement(userEmail, reward) {
 }
 function sendRewardEmail(userEmail, rewardName, templateId) {
   const templateParams = {
-    user: userEmail || "未知玩家",
-    reward: rewardName,
-    time: new Date().toLocaleString()
+    user: userEmail || "未知玩家",       // 玩家帳號
+    reward: rewardName,                 // 獎勵名稱
+    time: new Date().toLocaleString()   // 時間
   };
 
   emailjs.send("service_g83kh8j", templateId, templateParams)
@@ -998,8 +1301,11 @@ function sendRewardEmail(userEmail, rewardName, templateId) {
       console.log("✅ Email 發送成功:", response.status, response.text);
     }, function(error) {
       console.error("❌ Email 發送失敗:", error);
+      alert("❌ Email 發送失敗，請檢查 Console");
     });
 }
+
+
 
 
 
@@ -1133,6 +1439,275 @@ window.addEventListener('advancedChestChanged', async (event) => {
 });
 
 </script>
+<script>
+  const guarantee = [1500]; // 保夾門檻
+let prizePool = [
+...normalChestRewards.map(r => r.name),
+...chestRewards.map(r => r.name)
+];
 
+  
+  function renderPrizes(){
+    const bed = document.getElementById("prizeBed");
+    bed.innerHTML = "";
+    prizePool.forEach(p=>{
+      const d = document.createElement("div");
+      d.className = "prize";
+      d.innerText = p;
+      bed.appendChild(d);
+    });
+  }
+  
+  function updateProgressBar(){
+    let pct = (clawProgress % Math.max(...guarantee)) / Math.max(...guarantee) * 100;
+    document.getElementById("progressFill").style.width = pct+"%";
+  }
+  
+async function playClawMachine() {
+  const email = localStorage.getItem("userEmail");
+  if (!email) { alert("請先登入"); return; }
+
+  let balance = await loadBalance();
+  if (balance < 10) {
+    alert("❌ Fay幣不足，無法遊玩！");
+    return;
+  }
+  balance -= 10;
+  await saveBalance(balance);
+
+  const progressRef = db.collection("systemSettings").doc("clawMachine");
+  await db.runTransaction(async (t) => {
+    const doc = await t.get(progressRef);
+    let current = doc.exists ? doc.data().progress || 0 : 0;
+    current += 10;
+    t.set(progressRef, { progress: current }, { merge: true });
+  });
+
+  const clawArm = document.getElementById("clawArm");
+  const clawGrabber = document.getElementById("clawGrabber");
+  const hole = document.getElementById("prizeHole");
+
+  clawArm.style.transition = "top 1s ease-in-out";
+  clawArm.style.top = "200px"; // 爪子往下
+
+  setTimeout(() => {
+    clawGrabber.classList.add("claw-grab");
+
+    // 選中獎品
+    let won = prizePool[Math.floor(Math.random() * prizePool.length)];
+    let target = [...document.querySelectorAll("#prizeBed .ticket")]
+                   .find(p => p.innerText === won);
+
+    if (target) {
+      // 把獎品移到爪子上
+      target.style.transition = "all 1s ease";
+      target.style.position = "absolute";
+      target.style.top = "220px";
+      target.style.left = "50%";
+      target.style.transform = "translateX(-50%) scale(1)";
+      clawArm.appendChild(target);
+    }
+    // 或極低機率直接中
+    if (!won && Math.random() < 0.01) {
+      won = prizePool[Math.floor(Math.random() * prizePool.length)];
+    }
+    // 爪子往上
+    setTimeout(() => {
+      clawArm.style.top = "-120px";
+
+      setTimeout(() => {
+  clawArm.style.top = "-120px";
+
+  // 移到洞口
+  setTimeout(() => {
+    clawArm.style.left = "50%";
+
+    if (target) {
+if (Math.random() < 0.20) {
+  // 掉回去 → 播放往後甩動畫
+  target.classList.add("fall-back");
+
+  target.addEventListener("animationend", () => {
+    target.classList.remove("fall-back");
+
+    // 掉回 prizeBed 隨機位置
+    target.style.position = "absolute";
+    target.style.top = Math.random() * 40 + "%";
+    target.style.left = Math.random() * 80 + "%";
+    target.style.transform = `rotate(${Math.floor(Math.random()*60-30)}deg) scale(${0.8+Math.random()*0.6})`;
+    document.getElementById("prizeBed").appendChild(target);
+  }, { once: true });
+
+  document.getElementById("clawResult").innerText = "❌ 再接再厲";
+}
+ else {
+        // 4% 成功放入洞口
+        target.style.top = "300px";
+        target.style.left = hole.offsetLeft + hole.offsetWidth/2 + "px";
+        target.style.transition = "all 1s ease";
+
+        setTimeout(() => {
+          target.remove();
+          document.getElementById("clawResult").innerText = "🎉 恭喜獲得：「" + won + "」";
+
+          db.collection("clawRewardsHistory").add({
+            userEmail: email,
+            reward: won,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          sendRewardEmail(email, `抓娃娃機獲得：${won}`, "template_chest123");
+       }, 1000);
+      }
+    }
+
+  }, 1200);
+
+}, 1000);
+
+    }, 1000);
+
+  }, 1000);
+  let currentProgress = globalProgress || 0;
+let won;
+
+// 如果達到保夾門檻 → 直接中獎
+if (currentProgress >= guarantee[0]) {
+  won = prizePool[Math.floor(Math.random() * prizePool.length)];
+  // 重置進度
+  db.collection("systemSettings").doc("clawMachine").set({ progress: 0 }, { merge: true });
+} else {
+  // 一般隨機抽
+  won = prizePool[Math.floor(Math.random() * prizePool.length)];
+}
+
+}
+
+
+  
+  document.getElementById("playClaw").addEventListener("click",playClawMachine);
+
+// 顯示中獎的 prize 發光
+function highlightPrize(name){
+  const prizes = document.querySelectorAll("#prizeBed .prize");
+  prizes.forEach(p=>{
+    if(p.innerText === name){
+      p.classList.add("win");
+      setTimeout(()=>p.classList.remove("win"), 2000);
+    }
+  });
+}
+function renderPrizes(){
+  const bed = document.getElementById("prizeBed");
+  bed.innerHTML = "";
+  prizePool.forEach(p=>{
+    const d = document.createElement("div");
+
+    // 50% 生成一般卷，50% 生成捲捲卷
+    const isRoll = Math.random() < 0.5;
+    d.className = isRoll ? "ticket roll" : "ticket";
+    d.innerText = p;
+
+    // 隨機位置 & 旋轉
+    const x = Math.random() * 80; // %
+    const y = Math.random() * 40; // %
+    const rot = Math.floor(Math.random()*60 - 30); // -30° ~ 30°
+    const scale = 0.8 + Math.random()*0.6; // 0.8 ~ 1.4 倍
+
+    d.style.position = "absolute";
+    d.style.left = x+"%";
+    d.style.top = y+"%";
+    d.style.transform = `rotate(${rot}deg) scale(${scale})`;
+
+    bed.appendChild(d);
+  });
+}
+function highlightPrize(name){
+  const prizes = document.querySelectorAll("#prizeBed .ticket");
+  prizes.forEach(p=>{
+    if(p.innerText === name){
+      p.classList.add("win");
+      setTimeout(()=> {
+        p.remove(); // 動畫結束後移除
+      }, 1500);
+    }
+  });
+}
+// 🔹 即時監聽抓娃娃中獎紀錄
+let lastClawTimestamp = null;
+
+function listenToClawRewards() {
+  db.collection("clawRewardsHistory").orderBy("timestamp","desc").limit(5)
+    .onSnapshot(snapshot=>{
+      snapshot.docChanges().forEach(change=>{
+        if (change.type === "added") {
+          const data = change.doc.data();
+
+          // 如果是第一次載入，記住最新的 timestamp，不顯示
+          if (!lastClawTimestamp) {
+            lastClawTimestamp = data.timestamp?.toMillis?.() || Date.now();
+            return;
+          }
+
+          // 之後只顯示「比 baseline 更新的」
+          const ts = data.timestamp?.toMillis?.() || 0;
+          if (ts > lastClawTimestamp) {
+            showClawAnnouncement(data.userEmail, data.reward);
+            lastClawTimestamp = ts;
+          }
+        }
+      });
+    });
+}
+
+
+// 🔹 顯示公告
+function showClawAnnouncement(userEmail, reward) {
+  const shortEmail = userEmail ? userEmail.replace(/(.{3}).+(@.+)/, "$1***$2") : "玩家";
+  const msg = `🎉 ${shortEmail} 在抓娃娃機夾中了 ${reward}！`;
+  const toast = document.createElement("div");
+  toast.className="reward-toast";
+  toast.innerText=msg;
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.classList.add("show"),100);
+  setTimeout(()=>{
+    toast.classList.remove("show");
+    setTimeout(()=>toast.remove(),500);
+  },5000);
+}
+
+// 🔹 初始化時啟動監聽
+listenToClawRewards();
+
+// 🔹 即時監聽保夾進度
+function listenClawProgress() {
+  db.collection("systemSettings").doc("clawMachine")
+    .onSnapshot(doc => {
+      if (doc.exists) {
+        globalProgress = doc.data().progress || 0;
+        updateProgressBar();
+      }
+    });
+}
+if (Math.random() < 0.20) {
+  // 失敗 → 獎品掉回 prizeBed
+} else {
+  // 成功 → 放到洞口
+}
+
+// 🔹 更新進度條
+function updateProgressBar() {
+  let pct = (globalProgress % Math.max(...guarantee)) / Math.max(...guarantee) * 100;
+  document.getElementById("progressFill").style.width = pct + "%";
+}
+
+// 🔹 抓娃娃流程（新增扣 Fay 幣 + 全服進度）
+renderPrizes();
+listenClawProgress();
+listenToClawRewards();
+document.getElementById("playClaw").addEventListener("click", playClawMachine);
+
+  </script>
+  
 </body>
 </html>
