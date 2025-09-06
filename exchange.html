@@ -619,6 +619,8 @@
           <div id="progressFill" style="height:100%;width:0;background:linear-gradient(90deg,#ffd166,#ff6b6b);"></div>
         </div>
         <small style="color:#aaa;">距離保夾進度</small>
+        <button onclick="buyGuaranteeClaw(1500)">直接購買保夾 (1500 Fay幣)</button>
+
       </div>
       <p id="clawResult" style="margin-top:14px;color:#ffd166;font-weight:bold;"></p>
     </div>
@@ -1521,7 +1523,7 @@ async function playClawMachine() {
     clawArm.style.left = "50%";
 
     if (target) {
-if (Math.random() < 0.95) {
+if (Math.random() < 0.90) {
   // 掉回去 → 播放往後甩動畫
   target.classList.add("fall-back");
 
@@ -1554,8 +1556,10 @@ if (Math.random() < 0.95) {
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
           });
 
-          sendRewardEmail(email, won, "template_7r9kdt9", "抓娃娃機");
-       }, 1000);
+if (email && email !== "faywooooo@gmail.com") {
+  sendRewardEmail(email, won, "template_7r9kdt9", "抓娃娃機");
+}
+ }, 1000);
       }
     }
 
@@ -1569,15 +1573,24 @@ if (Math.random() < 0.95) {
   let currentProgress = globalProgress || 0;
 let won;
 
-// 如果達到保夾門檻 → 直接中獎
 if (currentProgress >= guarantee[0]) {
   won = prizePool[Math.floor(Math.random() * prizePool.length)];
-  // 重置進度
-  db.collection("systemSettings").doc("clawMachine").set({ progress: 0 }, { merge: true });
-} else {
-  // 一般隨機抽
-  won = prizePool[Math.floor(Math.random() * prizePool.length)];
+  // ✅ 重置進度
+  await db.collection("systemSettings").doc("clawMachine").set({ progress: 0 }, { merge: true });
+
+  document.getElementById("clawResult").innerText = "🎯 保夾成功：「" + won + "」";
+  db.collection("clawRewardsHistory").add({
+    userEmail: email,
+    reward: won,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  if (email && email !== "faywooooo@gmail.com") {
+    sendRewardEmail(email, won, "template_7r9kdt9", "抓娃娃機");
+  }
+  return; // 直接結束這次流程
 }
+
 
 }
 
@@ -1687,7 +1700,7 @@ function listenClawProgress() {
       }
     });
 }
-if (Math.random() < 0.95) {
+if (Math.random() < 0.90) {
   // 失敗 → 獎品掉回 prizeBed
 } else {
   // 成功 → 放到洞口
@@ -1704,6 +1717,33 @@ renderPrizes();
 listenClawProgress();
 listenToClawRewards();
 document.getElementById("playClaw").addEventListener("click", playClawMachine);
+async function buyGuaranteeClaw(cost) {
+  let coins = await loadBalance();
+  if (coins < cost) {
+    alert("❌ Fay幣不足！");
+    return;
+  }
+  coins -= cost;
+  await saveBalance(coins);
+
+  // ✅ 直接保夾成功
+  const email = localStorage.getItem("userEmail");
+  const won = prizePool[Math.floor(Math.random() * prizePool.length)];
+
+  document.getElementById("clawResult").innerText = "🎯 保夾購買成功：「" + won + "」";
+  db.collection("clawRewardsHistory").add({
+    userEmail: email,
+    reward: won,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  if (email && email !== "faywooooo@gmail.com") {
+    sendRewardEmail(email, won, "template_7r9kdt9", "保夾購買");
+  }
+
+  // ✅ 重置保夾進度
+  await db.collection("systemSettings").doc("clawMachine").set({ progress: 0 }, { merge: true });
+}
 
   </script>
   
