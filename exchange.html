@@ -512,8 +512,21 @@
   animation: fallBack 0.8s ease-out forwards;
   position: absolute !important; /* 確保能自由掉落 */
 }
+.tool-ai{
+  border-radius: 12px;
+  margin: 0 10px;
+  min-width: 250px;
+  max-width: 250px;
+  flex-shrink: 0;
+  padding: 50px;
 
-
+}
+.tool-ai-container{
+  background: rgba(255,255,255,0.05);
+  border-radius: 15px;
+  margin-top: 30px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
   </style>
 </head>
 <body>
@@ -554,7 +567,22 @@
     <div class="balance">目前餘額：<span id="coin-balance">0</span> Fay幣</div>
     <div class="items-wrapper">
       <div id="items-container" class="items-container"></div>
+    </div></div>
+    <!-- 工具兌換專區 -->
+    <div class="tool-ai-container">
+      <center>
+        <div class="tool-ai">
+          <h2>AI 評估工具</h2>
+          <p>價格：200 Fay幣 / 5 次使用額度</p>
+          <p>剩餘額度：<span id="tool-quota">0</span> 次</p>
+          <button onclick="redeemTool(200)">兌換使用額度</button><br><br>
+          <a href="tool-ai.html" style="color:gold;text-decoration:underline;">進入 AI 評估工具</a>
+        </div>
+        
+      </center>
     </div>
+    
+
     <!-- ===== 普通寶箱系統 ===== -->
 <div class="chest-container">
   <p>剩餘普通寶箱數量：<span id="normal-chest-count">0</span> 顆</p>
@@ -1744,6 +1772,53 @@ async function buyGuaranteeClaw(cost) {
   // ✅ 重置保夾進度
   await db.collection("systemSettings").doc("clawMachine").set({ progress: 0 }, { merge: true });
 }
+async function redeemTool(price) {
+  let balance = await loadBalance();
+  if (balance >= price) {
+    balance -= price;
+    await saveBalance(balance);
+    document.getElementById('coin-balance').textContent = balance;
+
+    // Firestore 增加 5 次額度
+    const email = localStorage.getItem('userEmail');
+    if (!email) return;
+
+    const snapshot = await db.collection('userLoginRewards').where('userEmail', '==', email).get();
+    if (!snapshot.empty) {
+      const docRef = db.collection('userLoginRewards').doc(snapshot.docs[0].id);
+      const data = snapshot.docs[0].data();
+      let quota = data.toolQuota || 0;
+      quota += 5;
+      await docRef.update({ toolQuota: quota });
+      alert(`✅ 已成功兌換 5 次 AI 評估工具額度！剩餘 Fay幣：${balance}，總額度：${quota} 次`);
+    }
+  } else {
+    alert('❌ Fay幣不足，無法兌換！');
+  }
+}
+async function loadToolQuota() {
+  const email = localStorage.getItem('userEmail');
+  if (!email) return;
+  try {
+    const snapshot = await db.collection('userLoginRewards').where('userEmail', '==', email).get();
+    if (!snapshot.empty) {
+      const data = snapshot.docs[0].data();
+      const quota = data.toolQuota || 0;
+      document.getElementById('tool-quota').textContent = quota;
+    }
+  } catch (e) {
+    console.error("❌ 無法讀取工具額度", e);
+  }
+}
+
+// 頁面載入時更新一次
+window.addEventListener("load", async () => {
+  await loadBalance();
+  await fetchItems();
+  await loadToolQuota(); // ✅ 額度顯示
+  setInterval(fetchItems, 5000);
+});
+
 
   </script>
   
