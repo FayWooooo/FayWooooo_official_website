@@ -25,6 +25,7 @@ const urlsToCache = [
   "/download.html",
   "/game.html",
   "/earn-map.html",
+  "/tool-ai.html",
   "/faycoin-sync.js" // 你網站的 JS
 ];
 
