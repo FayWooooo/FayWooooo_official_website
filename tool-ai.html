@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="logo.ico" type="image/x-icon">
+  <title>AI 評估工具 - FayWooooo</title>
+  <style>
+    @font-face {
+    font-family: 'hanwangheiheavy';
+    src: url('https://www.moedict.tw/fonts/truetype/wang/wt014.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+    body {
+      background: linear-gradient(180deg, #0a0f1f, #000);
+      color: white;
+      text-align: center;
+      font-family: 'hanwangheiheavy';
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      font-size: 48px;
+      background: linear-gradient(90deg, #ffd166, #ff9e66);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 30px 0 10px;
+    }
+    .subtitle {
+      font-size: 18px;
+      color: #ccc;
+      margin-bottom: 30px;
+    }
+    .img-box {
+      margin: auto;
+      max-width: 900px;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+    img {
+      width: 100%;
+      height: 480px;
+      border: none;
+      border-radius: 20px;
+    }
+    .tool-box {
+      background: rgba(255,255,255,0.07);
+      margin: 20px auto;
+      padding-top: 30px;
+      padding-bottom: 30px;
+      border-radius: 20px;
+      max-width: 900px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+    }
+    .quota-bar {
+      background: #222;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 15px auto;
+      height: 20px;
+      width: 80%;
+    }
+    .quota-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ffd166, #ff6b6b);
+      transition: width 0.5s;
+    }
+    .file-input {
+      margin: 20px auto;
+      display: block;
+    }
+    button {
+      background: linear-gradient(45deg, #ffd166, #ff9e66);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      margin-top: 10px;
+      color: #000;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 6px 16px rgba(255, 209, 102, 0.5);
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      white-space: pre-line;
+      color: #ffd166;
+    }
+    .back-btn {
+      margin: 30px 0;
+      background: none;
+      border: 1px solid #ffd166;
+      color: #ffd166;
+    }
+    .back-btn:hover {
+      background: #ffd166;
+      color: #000;
+    }
+    /* 響應式設計 */
+@media (max-width: 1024px) {
+  h1 {
+    font-size: 36px;
+  }
+  .img-box img {
+    height: auto;
+  }
+  .tool-box {
+    max-width: 95%;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 28px;
+  }
+  .subtitle {
+    font-size: 14px;
+  }
+  .img-box {
+    max-width: 100%;
+    border-radius: 10px;
+  }
+  .img-box img {
+    height: auto;
+    border-radius: 10px;
+  }
+  .tool-box {
+    max-width: 95%;
+    padding: 15px;
+  }
+  button {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px;
+  }
+  #result {
+    font-size: 16px;
+  }
+}
+
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <h1>AI 評估工具</h1>
+  <p class="subtitle">上傳影片或 Logo，獲得 AI 分析與建議</p>
+
+  <!-- 工具介紹影片 -->
+  <div class="img-box">
+    <img src="AI評估工具介紹.png">
+  </div>
+
+  <!-- 工具主體 -->
+  <div class="tool-box">
+    <h2>剩餘額度：<span id="quota">0</span> 次</h2>
+    <div class="quota-bar"><div id="quotaFill" class="quota-fill"></div></div>
+    
+    <input type="file" id="fileInput" class="file-input" accept="image/*,video/*"/>
+    <button onclick="analyzeFile()">使用 1 次</button>
+    <p id="result"></p>
+  </div>
+
+  <button class="back-btn" onclick="window.location.href='exchange.html'">返回兌換區</button>
+
+  <script>
+    // Firebase 初始化
+    const firebaseConfig = {
+      apiKey: "AIzaSyAw3NxfRft4pke6TUl9gQ4a8P0LEm30zWo",
+      authDomain: "faycoin-bb878.firebaseapp.com",
+      projectId: "faycoin-bb878",
+      storageBucket: "faycoin-bb878.appspot.com",
+      messagingSenderId: "665116400856",
+      appId: "1:665116400856:web:a263d792c69129400d8bad",
+      measurementId: "G-ZSZZD4W1HX"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let docId = null;
+    let currentQuota = 0;
+    const email = localStorage.getItem('userEmail');
+if (!email) {
+  alert("⚠️ 請先登入！");
+  window.location.href = "index.html"; // 未登入 → 跳回首頁
+}
+
+async function loadQuota() {
+    if (!email) return;
+    const snapshot = await db.collection('userLoginRewards')
+      .where('userEmail','==',email).get();
+      
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      docId = doc.id;
+      const data = doc.data();
+      currentQuota = data.toolQuota;
+  
+      // 🎁 登入後首次 → 免費送 1 次
+      if (currentQuota === undefined || currentQuota === 0) {
+        currentQuota = 1;
+        await db.collection('userLoginRewards').doc(docId)
+          .update({ toolQuota: 1 });
+        alert("🎁 已登入帳號，贈送 1 次免費使用額度！");
+      }
+  
+      updateQuotaUI();
+    }
+  }
+  
+
+    function updateQuotaUI() {
+      document.getElementById("quota").innerText = currentQuota;
+      let percent = Math.min(100, (currentQuota / 10) * 100); // 10 次滿格
+      document.getElementById("quotaFill").style.width = percent + "%";
+    }
+
+    async function analyzeFile() {
+      if (currentQuota <= 0) {
+        alert("❌ 沒有額度了，請回兌換區購買！");
+        window.location.href = "exchange.html";
+        return;
+      }
+
+const file = document.getElementById("fileInput").files[0];
+if (!file) {
+  alert("請先選擇檔案！");
+  return;
+}
+
+// ✅ 檢查副檔名 / MIME 類型
+if (!(file.type.startsWith("image/") || file.type.startsWith("video/"))) {
+  alert("❌ 只能上傳圖片或影片檔！");
+  return;
+}
+
+
+      currentQuota -= 1;
+      updateQuotaUI();
+      await db.collection('userLoginRewards').doc(docId).update({ toolQuota: currentQuota });
+
+      let score = Math.floor(Math.random() * 100);
+      let advice = score > 70 ? "不錯，繼續保持！" : "建議優化品質。";
+      document.getElementById("result").innerText = `📊 評分：${score}/100\n建議：${advice}`;
+    }
+
+    loadQuota();
+  </script>
+</body>
+</html>
