@@ -175,15 +175,16 @@ async function uploadFile(file, folder) {
   let imageUrl = "";
   let videoUrl = "";
 
-  const imageFile = document.getElementById("postImage").files[0];
-  if (imageFile) {
-    imageUrl = await uploadFile(imageFile, "images");
-  }
+const imageFile = document.getElementById("postImage").files[0];
+if (imageFile) {
+  imageUrl = `https://faywooooo.github.io/FayWooooo_official_website/${imageFile.name}`;
+}
 
-  const videoFile = document.getElementById("postVideo").files[0];
-  if (videoFile) {
-    videoUrl = await uploadFile(videoFile, "videos");
-  }
+const videoFile = document.getElementById("postVideo").files[0];
+if (videoFile) {
+  videoUrl = `https://faywooooo.github.io/FayWooooo_official_website/${videoFile.name}`;
+}
+
 
   // 🔍 Debug: 確認上傳結果
   console.log("📷 圖片網址:", imageUrl);
@@ -365,6 +366,24 @@ ${data.videoUrl ? `<video src="${data.videoUrl}" controls class="post-media"></v
       document.querySelectorAll(".bottom-nav a").forEach(a => a.classList.remove("active"));
       el.classList.add("active");
     }
+    // 🔧 清理 Firestore 裡的 blob:null 舊貼文
+async function cleanBlobPosts() {
+  const snapshot = await db.collection("blogPosts").get();
+  let count = 0;
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    if ((data.imageUrl && data.imageUrl.startsWith("blob:null")) ||
+        (data.videoUrl && data.videoUrl.startsWith("blob:null"))) {
+      await db.collection("blogPosts").doc(doc.id).delete();
+      console.log("🗑 已刪除:", doc.id);
+      count++;
+    }
+  }
+
+  alert("✅ 清理完成，共刪除了 " + count + " 篇含有 blob:null 的舊貼文");
+}
+
   </script>
 </body>
 </html>
