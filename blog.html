@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>FayWooooo 部落格</title>
+  <link rel="icon" href="logo.ico" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+  <style>
+    body {
+      background-image: linear-gradient(rgb(8, 19, 41), rgb(0, 0, 0));
+      font-family: 'hanwangheiheavy', sans-serif;
+      margin: 0; padding: 0;
+      color: white;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+    .page { display: none; padding: 20px; }
+    .page.active { display: block; }
+
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 60px; background: rgba(255,255,255,0.07);
+      display: flex; justify-content: space-around; align-items: center;
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.2);
+      z-index: 1000;
+    }
+    .bottom-nav a { color: #aaa; text-decoration: none; font-size: 22px; }
+    .bottom-nav a.active { color: gold; }
+
+    .post-card {
+      background: rgba(255,255,255,0.07);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    }
+    .post-header { display: flex; align-items: center; margin-bottom: 10px; }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      margin-right: 10px;
+    }
+    .post-header strong { font-size: 16px; }
+    .post-actions { margin-top: 10px; }
+    .post-actions button {
+      background: none; border: none; color: #ccc;
+      cursor: pointer; margin-right: 15px; font-size: 16px;
+    }
+    .post-actions button:hover { color: gold; }
+    .comments { margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; }
+    .comments p { margin: 5px 0; font-size: 14px; }
+    .comments input { width: 70%; padding: 5px; border-radius: 5px; border: none; }
+    .comments button { padding: 5px 10px; border: none; border-radius: 5px; background: gold; cursor: pointer; }
+
+    .post-media {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <nav style="padding:10px;background:rgba(255,255,255,0.07);border-radius:15px;margin:10px;">
+    <a href="index.html" style="color:white;margin-right:15px;text-decoration: none;">
+      <i class="fas fa-home"></i> 首頁
+    </a>
+    <a href="exchange.html" style="color:white;margin-right:15px;text-decoration: none;">
+      <i class="fas fa-coins"></i> Fay幣兌換
+    </a>
+    <a href="blog.html" style="color:gold;text-decoration: none;">
+      <i class="fas fa-pen"></i> 部落格
+    </a>
+  </nav>
+
+  <!-- 分頁內容 -->
+  <div id="homePage" class="page active">
+    <h2><i class="fas fa-home"></i> 首頁</h2>
+    <div id="homePosts"></div>
+  </div>
+
+  <div id="addPage" class="page">
+    <h2><i class="fas fa-plus-square"></i> 新增貼文</h2>
+    <div class="post-card">
+      <input type="text" id="postTitle" placeholder="標題"><br>
+      <textarea id="postContent" rows="5" placeholder="內容"></textarea><br>
+      <label>上傳圖片：<input type="file" id="postImage" accept="image/*"></label><br>
+      <label>上傳影片：<input type="file" id="postVideo" accept="video/*"></label><br>
+      <label>留言上限(0~10000)：<input type="number" id="maxComments" value="10000" min="0" max="10000"></label><br>
+      <button onclick="addBlogPost()">發表</button>
+    </div>
+  </div>
+  
+  <div id="explorePage" class="page">
+    <h2><i class="fas fa-compass"></i> 探索</h2>
+    <div id="explorePosts"></div>
+  </div>
+
+  <div id="profilePage" class="page">
+    <h2><i class="fas fa-user"></i> 個人頁</h2>
+    <p id="profileInfo"></p>
+    <div id="profilePosts"></div>
+  </div>
+
+  <!-- 底部導覽列 -->
+  <div class="bottom-nav">
+    <a href="#" onclick="showPage('homePage', this)" class="active"><i class="fas fa-home"></i></a>
+    <a href="#" onclick="showPage('addPage', this)"><i class="fas fa-plus-square"></i></a>
+    <a href="#" onclick="showPage('explorePage', this)"><i class="fas fa-compass"></i></a>
+    <a href="#" onclick="showPage('profilePage', this)"><i class="fas fa-user"></i></a>
+  </div>
+
+  <script>
+    // Firebase 初始化
+    const firebaseConfig = {
+      apiKey: "AIzaSyAw3NxfRft4pke6TUl9gQ4a8P0LEm30zWo",
+      authDomain: "faycoin-bb878.firebaseapp.com",
+      projectId: "faycoin-bb878",
+      storageBucket: "faycoin-bb878.appspot.com",
+      messagingSenderId: "665116400856",
+      appId: "1:665116400856:web:a263d792c69129400d8bad"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    const userEmail = localStorage.getItem("userEmail") || "guest@example.com";
+    const userNickname = localStorage.getItem("nickname") || "匿名";
+    const userAvatar = localStorage.getItem("avatarUrl") || "default-avatar.png";
+
+    // 相對時間
+    function timeAgo(date) {
+      if (!date) return "";
+      const now = new Date();
+      const diff = Math.floor((now - date) / 1000);
+      if (diff < 60) return "剛剛";
+      const mins = Math.floor(diff / 60);
+      if (mins < 60) return mins + " 分鐘前";
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return hours + " 小時前";
+      const days = Math.floor(hours / 24);
+      if (days < 7) return days + " 天前";
+      const weeks = Math.floor(days / 7);
+      if (weeks < 4) return weeks + " 週前";
+      const months = Math.floor(days / 30);
+      if (months < 12) return months + " 月前";
+      const years = Math.floor(days / 365);
+      return years + " 年前";
+    }
+
+    // 上傳檔案到 Storage
+
+async function uploadFile(file, folder) {
+  const ref = storage.ref().child(`${folder}/${Date.now()}_${file.name}`);
+  await ref.put(file);
+  return await ref.getDownloadURL(); // 🔥 永久公開網址
+}
+
+
+
+    // 新增貼文
+    async function addBlogPost() {
+  const title = document.getElementById("postTitle").value.trim();
+  const content = document.getElementById("postContent").value.trim();
+  const maxComments = parseInt(document.getElementById("maxComments").value) || 10000;
+
+  let imageUrl = "";
+  let videoUrl = "";
+
+  const imageFile = document.getElementById("postImage").files[0];
+  if (imageFile) {
+    imageUrl = await uploadFile(imageFile, "images");
+  }
+
+  const videoFile = document.getElementById("postVideo").files[0];
+  if (videoFile) {
+    videoUrl = await uploadFile(videoFile, "videos");
+  }
+
+  // 🔍 Debug: 確認上傳結果
+  console.log("📷 圖片網址:", imageUrl);
+  console.log("🎥 影片網址:", videoUrl);
+
+  // 抓使用者資料
+  const profileSnap = await db.collection("userProfiles").doc(userEmail).get();
+  let nickname = "匿名", avatarUrl = "default-avatar.png";
+  if (profileSnap.exists) {
+    const p = profileSnap.data();
+    nickname = p.nickname || nickname;
+    avatarUrl = p.avatarUrl || avatarUrl;
+  }
+
+  await db.collection("blogPosts").add({
+    userEmail,
+    nickname,
+    avatarUrl,
+    title,
+    content,
+    imageUrl,
+    videoUrl,
+    maxComments,
+    likes: 0,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(docRef => {
+    alert("✅ 貼文已成功發表！");
+    showPage("homePage", document.querySelector('.bottom-nav a')); 
+    setTimeout(() => {
+      const postEl = document.getElementById("post-" + docRef.id);
+      if (postEl) postEl.scrollIntoView({ behavior: "smooth" });
+    }, 800);
+  });
+
+  document.getElementById("postTitle").value = "";
+  document.getElementById("postContent").value = "";
+  document.getElementById("postImage").value = "";
+  document.getElementById("postVideo").value = "";
+}
+
+
+
+    // 按讚
+    async function likePost(postId) {
+      const ref = db.collection("blogPosts").doc(postId);
+      await ref.update({ likes: firebase.firestore.FieldValue.increment(1) });
+    }
+
+    // 分享
+    function sharePost(postId) {
+      const url = window.location.href + "?post=" + postId;
+      navigator.clipboard.writeText(url).then(()=>{
+        alert("已複製分享連結！");
+      });
+    }
+
+    // 刪除貼文
+    async function deletePost(postId) {
+      if (!confirm("確定要刪除這篇貼文嗎？")) return;
+      await db.collection("blogPosts").doc(postId).delete();
+      alert("✅ 貼文已刪除");
+    }
+
+    // 留言功能
+    async function loadComments(postId) {
+      const commentsDiv = document.getElementById("comments-" + postId);
+      commentsDiv.innerHTML = `
+        <input type="text" id="commentInput-${postId}" placeholder="寫留言...">
+        <button onclick="addComment('${postId}')">送出</button>
+        <div id="commentList-${postId}"></div>
+      `;
+      const snapshot = await db.collection("blogPosts").doc(postId).collection("comments").orderBy("createdAt","asc").get();
+      snapshot.forEach(doc=>{
+        const data = doc.data();
+        const c = document.createElement("div");
+        c.innerHTML = `
+          <strong>${data.nickname}</strong>：${data.text}
+          <button onclick="likeComment('${postId}','${doc.id}')"><i class="fas fa-heart"></i> ${data.likes || 0}</button>
+          <button onclick="replyComment('${postId}','${doc.id}')"><i class="fas fa-reply"></i> 回覆</button>
+          ${(data.userEmail === userEmail) ? `<button onclick="deleteComment('${postId}','${doc.id}')"><i class="fas fa-trash"></i></button>` : ""}
+        `;
+        document.getElementById("commentList-"+postId).appendChild(c);
+      });
+    }
+
+    async function addComment(postId) {
+      const input = document.getElementById("commentInput-" + postId);
+      const text = input.value.trim();
+      if (!text) return;
+
+      // 檢查留言數量
+      const post = await db.collection("blogPosts").doc(postId).get();
+      const comments = await db.collection("blogPosts").doc(postId).collection("comments").get();
+      if (comments.size >= (post.data().maxComments || 10000)) {
+        alert("留言數已達上限");
+        return;
+      }
+
+      await db.collection("blogPosts").doc(postId).collection("comments").add({
+        userEmail,
+        nickname: userNickname,
+        text,
+        likes: 0,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      input.value = "";
+      loadComments(postId);
+    }
+
+    async function likeComment(postId, commentId) {
+      await db.collection("blogPosts").doc(postId).collection("comments").doc(commentId).update({
+        likes: firebase.firestore.FieldValue.increment(1)
+      });
+    }
+
+    async function deleteComment(postId, commentId) {
+      if (!confirm("刪除此留言？")) return;
+      await db.collection("blogPosts").doc(postId).collection("comments").doc(commentId).delete();
+      loadComments(postId);
+    }
+
+    async function replyComment(postId, commentId) {
+      const reply = prompt("輸入回覆內容：");
+      if (!reply) return;
+      await db.collection("blogPosts").doc(postId).collection("comments").doc(commentId).collection("replies").add({
+        userEmail,
+        nickname: userNickname,
+        text: reply,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    function toggleComments(postId) {
+      const commentsDiv = document.getElementById("comments-" + postId);
+      if (commentsDiv.style.display === "none") {
+        commentsDiv.style.display = "block";
+        loadComments(postId);
+      } else {
+        commentsDiv.style.display = "none";
+      }
+    }
+
+    // 首頁文章流
+    db.collection("blogPosts").orderBy("createdAt","desc")
+      .onSnapshot(snapshot => {
+        const container = document.getElementById("homePosts");
+        container.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.className = "post-card";
+          div.id = "post-" + doc.id;
+          div.innerHTML = `
+            <div class="post-header">
+              <img src="${data.avatarUrl}" class="avatar">
+              <strong>${data.nickname}</strong>
+            </div>
+            <h3>${data.title}</h3>
+            <small><i class="fas fa-clock"></i> ${timeAgo(data.createdAt?.toDate())}</small>
+            <p>${data.content}</p>
+            ${data.imageUrl ? `<img src="${data.imageUrl}" class="post-media">` : ""}
+${data.videoUrl ? `<video src="${data.videoUrl}" controls class="post-media"></video>` : ""}
+            <div class="post-actions">
+              <button onclick="likePost('${doc.id}')"><i class="fas fa-thumbs-up"></i> ${data.likes || 0}</button>
+              <button onclick="toggleComments('${doc.id}')"><i class="fas fa-comment"></i> 留言</button>
+              <button onclick="sharePost('${doc.id}')"><i class="fas fa-share"></i> 分享</button>
+              ${data.userEmail === userEmail ? `<button onclick="deletePost('${doc.id}')"><i class="fas fa-trash"></i> 刪除</button>` : ""}
+            </div>
+            <div class="comments" id="comments-${doc.id}" style="display:none;"></div>
+          `;
+          container.appendChild(div);
+        });
+      });
+
+    // 分頁切換
+    function showPage(pageId, el) {
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.getElementById(pageId).classList.add("active");
+      document.querySelectorAll(".bottom-nav a").forEach(a => a.classList.remove("active"));
+      el.classList.add("active");
+    }
+  </script>
+</body>
+</html>
