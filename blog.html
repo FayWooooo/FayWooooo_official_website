@@ -158,6 +158,124 @@ background-color: #ffffff;
 #searchResults {
   margin-top: 20px;
 }
+/* 手機版（螢幕寬度小於 600px） */
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+  }
+
+  .post-card {
+    padding: 15px;
+    margin: 10px;
+  }
+
+  .post-header strong {
+    font-size: 14px;
+  }
+
+  .single-post-container {
+    flex-direction: column;
+    width: 95%;
+  }
+
+  .single-post, .single-comments {
+    width: 100%;
+  }
+
+  .bottom-nav {
+    height: 55px;
+  }
+
+  .bottom-nav a {
+    font-size: 20px;
+  }
+}
+
+/* 平板版（600px ~ 1024px） */
+@media (min-width: 601px) and (max-width: 1024px) {
+  body {
+    font-size: 15px;
+  }
+
+  .post-card {
+    padding: 18px;
+    margin: 15px;
+  }
+
+  .single-post-container {
+    flex-direction: column;
+    width: 90%;
+  }
+
+  .single-post, .single-comments {
+    width: 100%;
+  }
+
+  .bottom-nav {
+    height: 60px;
+  }
+
+  .bottom-nav a {
+    font-size: 22px;
+  }
+}
+
+/* 桌機（1025px 以上） */
+@media (min-width: 1025px) {
+  .single-post-container {
+    flex-direction: row;
+    width: 80%;
+  }
+
+  .single-post {
+    width: 65%;
+  }
+
+  .single-comments {
+    width: 30%;
+  }
+}
+/* 保證底部 nav 永遠顯示 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(255,255,255,0.07);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,255,255,0.2);
+  z-index: 2000;   /* 提高層級，避免被卡片蓋掉 */
+}
+
+/* 避免內容被 nav 擋住 */
+.page {
+  padding: 20px;
+  margin-bottom: 80px; /* 原本 50px → 改 80px，預留 nav 高度 */
+}
+
+/* 手機版 */
+@media (max-width: 600px) {
+  .bottom-nav {
+    height: 55px;
+  }
+  .bottom-nav a {
+    font-size: 20px;
+  }
+}
+
+/* 平板版 */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .bottom-nav {
+    height: 60px;
+  }
+  .bottom-nav a {
+    font-size: 22px;
+  }
+}
 
  </style>
 </head>
@@ -310,54 +428,52 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 // 顯示單一貼文
 async function showSinglePost(postId) {
-  document.body.innerHTML = ""; // 清空頁面
-  const snap = await db.collection("blogPosts").doc(postId).get();
-  if (!snap.exists) {
-    document.body.innerHTML = "<p style='text-align:center'>❌ 找不到貼文</p>";
-    return;
-  }
-  const data = snap.data();
-
-  const container = document.createElement("div");
-  container.className = "single-post-container";
-
-  const postDiv = document.createElement("div");
-  postDiv.className = "single-post";
-  postDiv.innerHTML = `
-    <div class="post-header">
-      <img src="${data.avatarUrl}" class="avatar">
-      <strong>${data.nickname}</strong>
-    </div>
-    <h3>${data.title}</h3>
-    <small><i class="fas fa-clock"></i> ${timeAgo(data.createdAt?.toDate())}</small>
-    <div class="post-content">
-      <p>${data.content}</p>
-      ${data.imageBase64 ? `<img src="${data.imageBase64}">` : ""}
-    </div>
-    <div class="post-actions">
-      <button onclick="likePost('${postId}')"><i class="fas fa-thumbs-up"></i> ${data.likes || 0}</button>
-      <button onclick="sharePost('${postId}')"><i class="fas fa-share"></i> 分享</button>
-    </div>
-    <div style="margin-top:20px;text-align:center;">
-      <button onclick="goHome()" style="padding:8px 16px;border:none;border-radius:8px;background:gold;cursor:pointer;">
-        <i class="fas fa-arrow-left"></i> 回首頁
-      </button>
-    </div>
-  `;
-
-  const commentsDiv = document.createElement("div");
-  commentsDiv.className = "single-comments";
-  commentsDiv.id = "comments-" + postId;
-
-  container.appendChild(postDiv);
-  container.appendChild(commentsDiv);
-  document.body.appendChild(container);
-
-setTimeout(() => {
-    loadComments(postId);
-  }, 50); // 等瀏覽器畫面刷新
+    const main = document.getElementById("homePage"); // 或者建立一個專門的 main container
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    main.innerHTML = ""; // 清空主要內容（不要清 body）
   
-}
+    const snap = await db.collection("blogPosts").doc(postId).get();
+    if (!snap.exists) {
+      main.innerHTML = "<p style='text-align:center'>❌ 找不到貼文</p>";
+      return;
+    }
+    const data = snap.data();
+  
+    const container = document.createElement("div");
+    container.className = "single-post-container";
+  
+    const postDiv = document.createElement("div");
+    postDiv.className = "single-post";
+    postDiv.innerHTML = `
+      <div class="post-header">
+        <img src="${data.avatarUrl}" class="avatar">
+        <strong>${data.nickname}</strong>
+      </div>
+      <h3>${data.title}</h3>
+      <small><i class="fas fa-clock"></i> ${timeAgo(data.createdAt?.toDate())}</small>
+      <div class="post-content">
+        <p>${data.content}</p>
+        ${data.imageBase64 ? `<img src="${data.imageBase64}">` : ""}
+      </div>
+      <div class="post-actions">
+        <button onclick="likePost('${postId}')"><i class="fas fa-thumbs-up"></i> ${data.likes || 0}</button>
+        <button onclick="sharePost('${postId}')"><i class="fas fa-share"></i> 分享</button>
+      </div>
+    `;
+  
+    const commentsDiv = document.createElement("div");
+    commentsDiv.className = "single-comments";
+    commentsDiv.id = "comments-" + postId;
+  
+    container.appendChild(postDiv);
+    container.appendChild(commentsDiv);
+    main.appendChild(container);
+  
+    setTimeout(() => {
+      loadComments(postId);
+    }, 50);
+  }
+  
 
 // 新增回首頁功能
 function goHome() {
