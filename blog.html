@@ -98,6 +98,9 @@
     background: black;
     box-shadow: 0 4px 20px rgba(0,0,0,0.6);
   }
+  .post-content img:hover{
+    cursor: pointer;
+  }
   
   
   .like-btn {
@@ -122,6 +125,7 @@ background-color: #ffffff;
   background: rgba(255,255,255,0.07);
   border-radius: 15px;
   padding: 20px;
+  max-height: 100vh;
   box-shadow: 0 8px 25px rgba(0,0,0,0.5);
 }
 
@@ -129,9 +133,9 @@ background-color: #ffffff;
   width: 25%;
   background: rgba(255,255,255,0.05);
   border-radius: 15px;
-  padding: 15px;
+  padding: 20px;
   overflow-y: auto;
-  max-height: 80vh;
+  max-height: 100vh;
 }
 .single-comments button {
   margin-top: 10px;
@@ -220,21 +224,6 @@ background-color: #ffffff;
   }
 }
 
-/* 桌機（1025px 以上） */
-@media (min-width: 1025px) {
-  .single-post-container {
-    flex-direction: row;
-    width: 80%;
-  }
-
-  .single-post {
-    width: 65%;
-  }
-
-  .single-comments {
-    width: 30%;
-  }
-}
 /* 保證底部 nav 永遠顯示 */
 .bottom-nav {
   position: fixed;
@@ -331,11 +320,12 @@ background-color: #ffffff;
   
   <!-- 修改底部導覽列 -->
   <div class="bottom-nav">
-    <a href="#" onclick="showPage('homePage', this)" class="active"><i class="fas fa-home"></i></a>
+    <a href="blog.html" class="active"><i class="fas fa-home"></i></a>
     <a href="#" onclick="showPage('searchPage', this)"><i class="fas fa-search"></i></a>
     <a href="#" onclick="showPage('addPage', this)"><i class="fas fa-plus-square"></i></a>
     <a href="#" onclick="showPage('profilePage', this)"><i class="fas fa-user"></i></a>
   </div>
+  
   
 
   <script>
@@ -378,32 +368,10 @@ background-color: #ffffff;
       return years + " 年前";
     }
 
-    // 按讚
-// 留言按讚：按一次加讚，再按一次取消
-async function likeComment(postId, commentId) {
-  const ref = db.collection("blogPosts").doc(postId).collection("comments").doc(commentId);
-  const snap = await ref.get();
-  const data = snap.data();
-  let likedBy = data.likedBy || [];
-
-  if (likedBy.includes(userEmail)) {
-    await ref.update({
-      likes: firebase.firestore.FieldValue.increment(-1),
-      likedBy: firebase.firestore.FieldValue.arrayRemove(userEmail)
-    });
-  } else {
-    await ref.update({
-      likes: firebase.firestore.FieldValue.increment(1),
-      likedBy: firebase.firestore.FieldValue.arrayUnion(userEmail)
-    });
-  }
-}
-
 
 
 
     // 分享
-    // 分享功能：複製單一貼文連結
 function sharePost(postId) {
   const url = window.location.origin + window.location.pathname + "?post=" + postId;
   navigator.clipboard.writeText(url).then(() => {
@@ -415,133 +383,95 @@ function sharePost(postId) {
 window.addEventListener("DOMContentLoaded", async () => {
     const params = new URLSearchParams(window.location.search);
     const postId = params.get("post");
-    const profileId = params.get("profile"); // 新增
+    const profileId = params.get("profile");
   
     if (postId) {
+      // 顯示單篇貼文
       showSinglePost(postId);
     } else if (profileId) {
+      // 顯示個人檔案
       showProfile(profileId);
       showPage("profilePage", document.querySelector('.bottom-nav a[onclick*="profilePage"]'));
+    } else {
+      // 預設顯示首頁文章流
+      showPage("homePage", document.querySelector('.bottom-nav a[href="blog.html"]'));
     }
   });
+  
   
 
 // 顯示單一貼文
 async function showSinglePost(postId) {
-    const main = document.getElementById("homePage"); // 或者建立一個專門的 main container
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    main.innerHTML = ""; // 清空主要內容（不要清 body）
   
-    const snap = await db.collection("blogPosts").doc(postId).get();
-    if (!snap.exists) {
-      main.innerHTML = "<p style='text-align:center'>❌ 找不到貼文</p>";
-      return;
+    let singlePage = document.getElementById("singlePostPage");
+    if (!singlePage) {
+      singlePage = document.createElement("div");
+      singlePage.id = "singlePostPage";
+      document.body.appendChild(singlePage);
     }
-    const data = snap.data();
+    singlePage.className = "page active";
+    singlePage.innerHTML = "載入中...";
   
-    const container = document.createElement("div");
-    container.className = "single-post-container";
+    // 即時監聽貼文
+    db.collection("blogPosts").doc(postId).onSnapshot(snap => {
+      if (!snap.exists) {
+        singlePage.innerHTML = "<p style='text-align:center'>❌ 找不到貼文</p>";
+        return;
+      }
+      const data = snap.data();
   
-    const postDiv = document.createElement("div");
-    postDiv.className = "single-post";
-    postDiv.innerHTML = `
-      <div class="post-header">
-        <img src="${data.avatarUrl}" class="avatar">
-        <strong>${data.nickname}</strong>
-      </div>
-      <h3>${data.title}</h3>
-      <small><i class="fas fa-clock"></i> ${timeAgo(data.createdAt?.toDate())}</small>
-      <div class="post-content">
-        <p>${data.content}</p>
-        ${data.imageBase64 ? `<img src="${data.imageBase64}">` : ""}
-      </div>
-      <div class="post-actions">
-        <button onclick="likePost('${postId}')"><i class="fas fa-thumbs-up"></i> ${data.likes || 0}</button>
-        <button onclick="sharePost('${postId}')"><i class="fas fa-share"></i> 分享</button>
-      </div>
-    `;
+      const div = document.createElement("div");
+      div.className = "post-card";
+      div.id = "post-" + postId;
   
-    const commentsDiv = document.createElement("div");
-    commentsDiv.className = "single-comments";
-    commentsDiv.id = "comments-" + postId;
+      div.innerHTML = `
+        <div class="post-header">
+          <img src="${data.avatarUrl}" class="avatar">
+          <strong>${data.nickname}</strong>
+        </div>
+        <h3>${data.title}</h3>
+        <small><i class="fas fa-clock"></i> ${data.createdAt ? timeAgo(data.createdAt.toDate()) : "剛剛"}</small>
+        <div class="post-content">
+          <p>${data.content}</p>
+          ${data.imageBase64 ? `<img src="${data.imageBase64}">` : ""}
+        </div>
+        <div class="post-actions">
+          <button onclick="likePost('${postId}')">
+            <i class="fas fa-thumbs-up"></i> ${data.likes || 0}
+          </button>
+          <button class="comment-btn" onclick="toggleComments('${postId}')">
+            <i class="fas fa-comment"></i> 留言
+            <span class="comment-count" id="comment-count-${postId}" style="display:none;"></span>
+          </button>
+          <button onclick="sharePost('${postId}')"><i class="fas fa-share"></i> 分享</button>
+          ${data.userEmail === userEmail ? `<button onclick="deletePost('${postId}')"><i class="fas fa-trash"></i> 刪除</button>` : ""}
+        </div>
+        <div class="comments" id="comments-${postId}" style="display:none;"></div>
+      `;
   
-    container.appendChild(postDiv);
-    container.appendChild(commentsDiv);
-    main.appendChild(container);
+      singlePage.innerHTML = "";
+      singlePage.appendChild(div);
   
-    setTimeout(() => {
-      loadComments(postId);
-    }, 50);
-  }
-  
-
-// 新增回首頁功能
-function goHome() {
-  window.location.href = "blog.html"; // 重新載入部落格首頁
-}
-
-
-
-function loadComments(postId) {
-    const commentsDiv = document.getElementById("comments-" + postId);
-    if (!commentsDiv) return;
-  
-    db.collection("blogPosts").doc(postId)
-      .collection("comments").orderBy("createdAt", "asc")
-      .onSnapshot(snapshot => {
-        // 重建留言區
-        commentsDiv.innerHTML = `
-          <h3>留言</h3>
-          <input type="text" id="commentInput-${postId}" placeholder="輸入留言...">
-          <button onclick="addComment('${postId}')">送出</button>
-          <div id="commentList-${postId}"></div>
-        `;
-  
-        // ⚠️ 再檢查一次
-        const list = document.getElementById("commentList-" + postId);
-        if (!list) return;
-  
-        if (snapshot.empty) {
-          list.innerHTML = "<p style='color:#aaa'>目前沒有留言</p>";
-          return;
-        }
-  
-        let count = 0;
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const c = document.createElement("div");
-          c.innerHTML = `
-            <strong>${data.nickname}</strong>：${data.text}
-            <button class="like-btn" onclick="likeComment('${postId}','${doc.id}')">
-              <i class="fas fa-heart"></i> ${data.likes || 0}
-            </button>
-            <button onclick="replyComment('${postId}','${doc.id}')"><i class="fas fa-reply"></i> 回覆</button>
-            ${(data.userEmail === userEmail) ? `<button onclick="deleteComment('${postId}','${doc.id}')"><i class="fas fa-trash"></i></button>` : ""}
-            <div id="replies-${doc.id}" class="replies"></div>
-          `;
-  
-          if (count < 5) list.appendChild(c);
-          else c.style.display = "none";
-          count++;
-  
-          loadReplies(postId, doc.id);
+      // 即時監聽留言數
+      db.collection("blogPosts").doc(postId).collection("comments")
+        .onSnapshot(snapshot => {
+          const badge = div.querySelector(`#comment-count-${postId}`);
+          if (snapshot.size > 0) {
+            badge.style.display = "inline-block";
+            badge.textContent = snapshot.size > 9 ? "9+" : snapshot.size;
+          } else {
+            badge.style.display = "none";
+          }
         });
-  
-        if (count > 5) {
-          const btn = document.createElement("button");
-          btn.textContent = "展開更多留言";
-          btn.onclick = () => {
-            [...list.children].forEach(c => c.style.display = "block");
-            btn.remove();
-          };
-          list.appendChild(btn);
-        }
-      });
+    });
   }
   
+  
+  
+  
 
-
-
+  
 
 
 async function addComment(postId) {
@@ -613,42 +543,105 @@ async function replyComment(postId, commentId) {
   }
   
   
-  function loadReplies(postId, commentId) {
-  const repliesDiv = document.getElementById("replies-" + commentId);
-  db.collection("blogPosts").doc(postId)
-    .collection("comments").doc(commentId)
-    .collection("replies").orderBy("createdAt","asc")
-    .onSnapshot(snapshot => {
-      repliesDiv.innerHTML = "";
-      snapshot.forEach(doc => {
-        const r = doc.data();
-        const div = document.createElement("div");
-        div.style.marginLeft = "20px";
-        div.innerHTML = `<small><strong>${r.nickname}</strong>：${r.text}</small>`;
-        repliesDiv.appendChild(div);
-      });
-    });
+function loadReplies(postId, commentId) {
+    const repliesDiv = document.getElementById("replies-" + commentId);
+if (!window.replyUnsub) window.replyUnsub = {};
+if (window.replyUnsub[commentId]) {
+  window.replyUnsub[commentId](); // 停止舊監聽
 }
 
+window.replyUnsub[commentId] = db.collection("blogPosts").doc(postId)
+  .collection("comments").doc(commentId)
+  .collection("replies").orderBy("createdAt","asc")
+  .onSnapshot(snapshot => {
+    const target = document.getElementById("replies-" + commentId);
+    if (!target) return;
+
+    target.innerHTML = "";
+    snapshot.forEach(doc => {
+      const r = doc.data();
+      const div = document.createElement("div");
+      div.style.marginLeft = "20px";
+      div.innerHTML = `<small><strong>${r.nickname}</strong>：${r.text}</small>`;
+      target.appendChild(div);
+    });
+  });
+}
+  
+function loadComments(postId) {
+    const commentsDiv = document.getElementById("comments-" + postId);
+    if (!commentsDiv) return;
+  
+    // 初始化輸入框
+    commentsDiv.innerHTML = `
+      <h3>留言</h3>
+      <input type="text" id="commentInput-${postId}" placeholder="輸入留言...">
+      <button onclick="addComment('${postId}')">送出</button>
+      <div id="commentList-${postId}"></div>
+    `;
+  
+    const list = document.getElementById("commentList-" + postId);
+  
+    // 建立監聽
+    if (!window.commentUnsub) window.commentUnsub = {};
+    if (window.commentUnsub[postId]) window.commentUnsub[postId]();
+  
+    window.commentUnsub[postId] = db.collection("blogPosts").doc(postId)
+      .collection("comments").orderBy("createdAt", "asc")
+      .onSnapshot(snapshot => {
+        if (!list) return;
+        list.innerHTML = "";
+  
+        if (snapshot.empty) {
+          list.innerHTML = "<p style='color:#aaa'>目前沒有留言</p>";
+          return;
+        }
+  
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const c = document.createElement("div");
+          c.innerHTML = `
+            <strong>${data.nickname || "匿名"}</strong>：${data.text || ""}
+            <button class="like-btn" onclick="likeComment('${postId}','${doc.id}')">
+              <i class="fas fa-heart"></i> ${data.likes || 0}
+            </button>
+            <button onclick="replyComment('${postId}','${doc.id}')"><i class="fas fa-reply"></i> 回覆</button>
+            ${(data.userEmail === userEmail) ? `<button onclick="deleteComment('${postId}','${doc.id}')"><i class="fas fa-trash"></i></button>` : ""}
+            <div id="replies-${doc.id}" class="replies"></div>
+          `;
+          list.appendChild(c);
+  
+          // 即時載入回覆
+          requestAnimationFrame(() => loadReplies(postId, doc.id));
+        });
+      });
+  }
+  
+  
+  
+
+function toggleComments(postId) {
+    const commentsDiv = document.getElementById("comments-" + postId);
+    if (!commentsDiv) return;
+  
+    const current = window.getComputedStyle(commentsDiv).display;
+    if (current === "none") {
+      commentsDiv.style.display = "block";
+      loadComments(postId); // 展開時渲染
+    } else {
+      commentsDiv.style.display = "none";
+    }
+  }
+  
   
 
 
-    function toggleComments(postId) {
-      const commentsDiv = document.getElementById("comments-" + postId);
-      if (commentsDiv.style.display === "none") {
-        commentsDiv.style.display = "block";
-        loadComments(postId);
-      } else {
-        commentsDiv.style.display = "none";
-      }
-    }
-
     // 首頁文章流
     db.collection("blogPosts").orderBy("createdAt","desc")
-      .onSnapshot(snapshot => {
-        const container = document.getElementById("homePosts");
-        container.innerHTML = "";
-        snapshot.forEach(async (doc) => {
+  .onSnapshot(snapshot => {
+    const container = document.getElementById("homePosts");
+    container.innerHTML = "";   // ← 打開這行，避免重複
+    snapshot.forEach(async (doc) => {
   const data = doc.data();
   const div = document.createElement("div");
   div.className = "post-card";
@@ -939,6 +932,27 @@ function shareProfile(email) {
   navigator.clipboard.writeText(url).then(() => {
     alert("✅ 已複製個人檔案連結！");
   });
+}
+// 留言按讚：按一次加讚，再按一次取消
+async function likeComment(postId, commentId) {
+  const ref = db.collection("blogPosts").doc(postId).collection("comments").doc(commentId);
+  const snap = await ref.get();
+  if (!snap.exists) return;
+
+  const data = snap.data();
+  let likedBy = data.likedBy || [];
+
+  if (likedBy.includes(userEmail)) {
+    await ref.update({
+      likes: firebase.firestore.FieldValue.increment(-1),
+      likedBy: firebase.firestore.FieldValue.arrayRemove(userEmail)
+    });
+  } else {
+    await ref.update({
+      likes: firebase.firestore.FieldValue.increment(1),
+      likedBy: firebase.firestore.FieldValue.arrayUnion(userEmail)
+    });
+  }
 }
 
   </script>
