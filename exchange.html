@@ -31,7 +31,7 @@
       background: rgba(255,255,255,0.07);
       padding: 20px;
       border-radius: 20px;
-      max-width: 90%;
+      max-width: 100%;
       margin: 50px auto;
       box-shadow: 0 8px 25px rgba(0,0,0,0.5);
       position: relative;
@@ -532,7 +532,6 @@
 <body>
   <script>
     if (localStorage.getItem('isLoggedIn') !== 'true') {
-      alert('⚠️ 請先登入才能查看任務');
       window.location.href = 'index.html';
     }
   </script>
@@ -1821,6 +1820,31 @@ window.addEventListener("load", async () => {
 
 
   </script>
-  
+  <script>
+    const currentEmail = localStorage.getItem('userEmail') || '';
+    
+    if (currentEmail.toLowerCase() !== 'faywooooo@gmail.com') {
+      // 禁止 F12、Ctrl+S、Ctrl+U
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'F12') {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+        if (e.ctrlKey && (e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'u')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+      });
+    
+      // 禁止右鍵選單
+      document.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        return false;
+      });
+    }
+    </script>
+    
 </body>
 </html>
