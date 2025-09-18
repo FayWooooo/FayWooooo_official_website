@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>觀眾留言給我玩 - FayWooooo</title>
+  <link rel="icon" href="logo.ico" type="image/x-icon">
+  <style>
+    body {
+      background: linear-gradient(#081329,#000);
+      color: white; font-family: sans-serif;
+      margin: 0; padding: 0; text-align: center;
+    }
+    .tabs { display: flex; justify-content: center; gap: 15px; padding: 20px; background: rgba(255,255,255,0.05);}
+    .tab { padding: 10px 20px; border-radius: 8px; background: rgba(255,255,255,0.1); cursor: pointer; }
+    .tab.active { background: gold; color: black; font-weight: bold; }
+    .page { display: none; padding: 30px; }
+    .page.active { display: block; }
+    .form-container { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; max-width: 600px; margin: 0 auto; }
+    input, textarea { width: 90%; padding: 10px; margin: 10px 0; border-radius: 8px; border: none; }
+    button { background: gold; color: black; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1 style="margin-top:20px;">📝 觀眾留言給我玩</h1>
+
+  <div class="tabs">
+    <div class="tab active" data-target="rules">投稿規則</div>
+    <div class="tab" data-target="play">留言投稿</div>
+  </div>
+
+  <select id="eventSelect" style="width:90%;padding:10px;border-radius:8px;margin-top:15px;">
+    <option value="">載入中...</option>
+  </select>
+
+  <!-- 投稿規則 -->
+  <div class="page active" id="rules">
+    <h2>投稿規則</h2>
+    <p>📌 每次投稿會扣除 50 Fay幣，若未被採用將退回<br>
+       📌 每個挑戰必須是一局能完成,只可要求對局內的挑戰<br>
+       📌 若嘗試過4次後無法成功我會開始投機取巧</p>
+  </div>
+
+  <!-- 觀眾留言給我玩 -->
+  <div class="page" id="play">
+    <h2>留言投稿</h2>
+    <div class="form-container">
+      <input type="text" id="playTitle" placeholder="標題">
+      <textarea id="playText" placeholder="留言內容"></textarea>
+      <button onclick="submitPost()">送出留言</button>
+    </div>
+  </div>
+
+  <button style="margin-top:40px;" onclick="window.location.href='index.html'">回首頁</button>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <!-- 管理員控制台 -->
+  <div id="adminArea" style="display:none;padding:30px;background:rgba(255,255,255,0.05);margin-top:50px;">
+    <h2 style="color:gold;">管理員：投稿活動管理</h2>
+    <input id="newEventName" placeholder="新活動名稱">
+    <button onclick="createSubmissionEvent()">建立活動</button>
+    <div id="eventList"></div>
+
+    <h3>審核留言</h3>
+    <div id="reviewList"></div>
+  </div>
+
+  <script>
+        // 確保登入狀態
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'index.html';
+    }
+    const firebaseConfig = {
+      apiKey: "AIzaSyAw3NxfRft4pke6TUl9gQ4a8P0LEm30zWo",
+      authDomain: "faycoin-bb878.firebaseapp.com",
+      projectId: "faycoin-bb878",
+      storageBucket: "faycoin-bb878.appspot.com",
+      messagingSenderId: "665116400856",
+      appId: "1:665116400856:web:a263d792c69129400d8bad"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const userEmail = localStorage.getItem('userEmail') || '';
+
+    async function submitPost(){
+      if(!userEmail){ alert('請先登入'); return; }
+
+      const eventId = document.getElementById('eventSelect').value;
+      if(!eventId){ alert('目前沒有開放的投稿活動'); return; }
+
+      const title = document.getElementById('playTitle').value.trim();
+      const text = document.getElementById('playText').value.trim();
+
+      if(!title && !text){ alert('請輸入內容'); return; }
+
+      // 確認 Fay幣
+      const snap = await db.collection('userLoginRewards').where('userEmail','==',userEmail).get();
+      if(snap.empty){ alert('找不到使用者資料'); return; }
+      const doc = snap.docs[0];
+      let data = doc.data();
+      let coins = data.coins || 0;
+      if(coins < 50){ alert('❌ Fay幣不足（需要50）'); return; }
+
+      // 扣 50 Fay幣
+      coins -= 50;
+      await db.collection('userLoginRewards').doc(doc.id).update({ coins });
+
+      // 存進 Firestore
+      await db.collection('submissions').add({
+        userEmail, type: 'play', eventId,
+        title, text,
+        status: 'pending',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      alert('✅ 留言已送出（已扣50 Fay幣），等待審核');
+    }
+
+    document.querySelectorAll('.tab').forEach(t=>{
+      t.onclick = ()=>{
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById(t.dataset.target).classList.add('active');
+      };
+    });
+
+    const adminEmails = ["faywooooo@gmail.com"];
+    if(adminEmails.includes(userEmail)) {
+      document.getElementById('adminArea').style.display = 'block';
+    }
+
+    async function createSubmissionEvent(){
+      const name = document.getElementById('newEventName').value.trim();
+      if(!name) return;
+      await db.collection('submissionEvents').add({
+        name, isOpen:true, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      loadEvents();
+    }
+
+    async function loadEvents(){
+      const list = document.getElementById('eventList');
+      const snap = await db.collection('submissionEvents').orderBy('createdAt','desc').get();
+      list.innerHTML='';
+      snap.forEach(doc=>{
+        const d = doc.data();
+        const div = document.createElement('div');
+        div.style.margin = '8px 0';
+        div.innerHTML = `
+          <b>${d.name}</b>（${d.isOpen?'開放中':'已關閉'}）
+          <button onclick="toggleEvent('${doc.id}',${!d.isOpen})">${d.isOpen?'關閉':'開放'}</button>
+          <button style="background:#e74c3c;color:white;" onclick="deleteEvent('${doc.id}')">刪除</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    async function loadOpenEvents(){
+      const sel = document.getElementById('eventSelect');
+      const snap = await db.collection('submissionEvents').where('isOpen','==',true).get();
+      sel.innerHTML = '';
+      if(snap.empty){
+        sel.innerHTML = '<option value="">目前無開放活動</option>';
+        return;
+      }
+      snap.forEach(d=>{
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = d.data().name;
+        sel.appendChild(opt);
+      });
+    }
+
+    async function toggleEvent(id,val){
+      await db.collection('submissionEvents').doc(id).update({isOpen:val});
+      loadEvents(); loadOpenEvents();
+    }
+
+    async function deleteEvent(id){
+      if(!confirm('確定要刪除此活動嗎？\n（不會刪除留言內容）')) return;
+      await db.collection('submissionEvents').doc(id).delete();
+      loadEvents(); loadOpenEvents();
+    }
+
+    async function loadPending(){
+      const list = document.getElementById('reviewList');
+      const snap = await db.collection('submissions').where('status','==','pending').get();
+      list.innerHTML='';
+      snap.forEach(doc=>{
+        const d = doc.data();
+        const div = document.createElement('div');
+        div.style.margin='15px 0';
+        div.style.background='rgba(255,255,255,0.05)';
+        div.style.padding='10px';
+        div.style.borderRadius='8px';
+
+        div.innerHTML = `
+          <b>${d.title || '無標題'}</b> (${d.userEmail})
+          <br>
+          <button onclick="approve('${doc.id}')">採用</button>
+          <button onclick="reject('${doc.id}','${d.userEmail}')">未採用退幣</button>
+          <p>${d.text || ''}</p>
+        `;
+
+        list.appendChild(div);
+      });
+    }
+
+    async function approve(id){
+      await db.collection('submissions').doc(id).update({status:'accepted'});
+      loadPending();
+    }
+
+    async function reject(id,email){
+      await db.collection('submissions').doc(id).update({status:'rejected'});
+      const snap = await db.collection('userLoginRewards').where('userEmail','==',email).get();
+      if(!snap.empty){
+        const doc = snap.docs[0];
+        let coins = doc.data().coins||0;
+        coins += 50;
+        await db.collection('userLoginRewards').doc(doc.id).update({coins});
+      }
+      loadPending();
+    }
+
+    loadEvents();
+    loadPending();
+    loadOpenEvents();
+  </script>
+</body>
+</html>
