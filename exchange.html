@@ -833,11 +833,18 @@
   alert(`✅ 兌換成功！剩餘 Fay幣：${balance}`);
   uploadRecord(getUserId(), balance, item);
 
-  // 🔹 寄送 Email
-  const email = localStorage.getItem("userEmail");
-  if (email && email !== "faywooooo@gmail.com") {
-    sendRewardEmail(email, `成功兌換了商品：${item}`, "template_o2q9pt8");
-  }
+// 🔹 寄送 Email
+
+const email = localStorage.getItem("userEmail");
+if (email && email !== "faywooooo@gmail.com") {
+  sendRewardEmail(
+    email,
+    `成功兌換了商品：${item}`,
+    "FayCoin-Reward"   // ✅ 換成你設定的 EmailJS 模板 ID
+  );
+}
+
+
 }else {
         alert('❌ Fay幣不足，無法兌換！');
       }
@@ -1105,7 +1112,7 @@ window.addEventListener("load", () => {
 
     // 🔹 頁面載入時初始化
     window.onload = async () => {
-  await loadBalance();
+  listenToBalance();  // ✅ 啟動即時監聽
   await fetchItems();
   setInterval(fetchItems, 5000);
 
@@ -1120,6 +1127,47 @@ window.addEventListener("load", () => {
 
   listenToChestRewards(); // 啟動公告監聽
 };
+// 單次讀取 Fay幣（只回傳數字，不更新 UI）
+async function getBalanceOnly() {
+  const email = localStorage.getItem('userEmail');
+  if (!email) return 0;
+
+  try {
+    const snapshot = await db.collection('userLoginRewards')
+      .where('userEmail', '==', email)
+      .get();
+
+    if (!snapshot.empty) {
+      return snapshot.docs[0].data().coins || 0;
+    }
+  } catch (e) {
+    console.error("❌ getBalanceOnly 錯誤", e);
+  }
+  return 0;
+}
+// 即時監聽 Fay幣變化
+function listenToBalance() {
+  const email = localStorage.getItem('userEmail');
+  if (!email) return;
+
+  db.collection('userLoginRewards')
+    .where('userEmail', '==', email)
+    .onSnapshot(snapshot => {
+      if (!snapshot.empty) {
+        const coins = snapshot.docs[0].data().coins || 0;
+
+        // 更新顯示與 localStorage
+        localStorage.setItem(`fayCoins_${email}`, coins);
+        localStorage.setItem('fayCoinBalance', coins.toString());
+        document.getElementById('coin-balance').textContent = coins;
+
+        // 廣播事件，通知其他頁面
+        window.dispatchEvent(new CustomEvent('fayCoinChanged', {
+          detail: { newBalance: coins }
+        }));
+      }
+    });
+}
 
 
     // 監聽 Fay幣變化事件（來自其他頁面）
@@ -1317,11 +1365,10 @@ function showRewardAnnouncement(userEmail, reward) {
     setTimeout(()=>toast.remove(),500);
   },5000);
 }
-function sendRewardEmail(userEmail, rewardName, templateId, sourceType) {
+function sendRewardEmail(userEmail, rewardName, templateId) {
   const templateParams = {
     user: userEmail || "未知玩家",
     reward: rewardName,
-    type: sourceType || "系統獎勵",   // 新增來源資訊
     time: new Date().toLocaleString()
   };
 
