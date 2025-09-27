@@ -28,6 +28,7 @@ const urlsToCache = [
   "/tool-ai.html",
   "/blog.html",
   "/submission.html",
+  "/FayPass.html",
   "/AI評估工具介紹.png",
   "/faycoin-sync.js" // 你網站的 JS
 ];
